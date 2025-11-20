@@ -17,13 +17,13 @@
              action="securitysuite/redirect/index/module/twofa"
              resource="MiniOrange_SecuritySuite::twofactor"/>
 
-             <add id="MiniOrange_SecuritySuite::social-login"
+             <add id="MiniOrange_SecuritySuite::social_login"
              title="Social Login"
              module="MiniOrange_SecuritySuite"
              sortOrder="20"
              parent="MiniOrange_SecuritySuite::SecuritySuite"
              action="securitysuite/redirect/index/module/social-login"
-             resource="MiniOrange_SecuritySuite::social-login"/>
+             resource="MiniOrange_SecuritySuite::social_login"/>
 
 
                <!--
@@ -33,13 +33,13 @@
                     to be called when menu item is clicked.
                -->
 
-               <add id="MiniOrange_SecuritySuite::Account"
+               <add id="MiniOrange_SecuritySuite::account"
                title="Account"
                module="MiniOrange_SecuritySuite"
                sortOrder="100"
                parent="MiniOrange_SecuritySuite::SecuritySuite"
                action="securitysuite/redirect/index/module/twofa"
-               resource="MiniOrange_SecuritySuite::Account"/>
+               resource="MiniOrange_SecuritySuite::account"/>
                
                <!--
                Adding a upgrade menu item to show users the different plans

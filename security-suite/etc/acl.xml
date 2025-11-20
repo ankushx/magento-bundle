@@ -12,9 +12,9 @@
                         <!-- Two-Factor Authentication ACL definition -->
                         <resource id="MiniOrange_SecuritySuite::twofactor" title="Two-Factor Authentication" sortOrder="10"/>
                         <!-- Social Login ACL definition -->
-                        <resource id="MiniOrange_SecuritySuite::social-login" title="Social Login" sortOrder="70"/>
+                        <resource id="MiniOrange_SecuritySuite::social_login" title="Social Login" sortOrder="70"/>
                         <!-- Account ACL definition -->
-                        <resource id="MiniOrange_SecuritySuite::Account" title="Account" sortOrder="50"/>
+                        <resource id="MiniOrange_SecuritySuite::account" title="Account" sortOrder="50"/>
                         <!-- Upgrade ACL definition -->
                         <resource id="MiniOrange_SecuritySuite::upgrade" title="Upgrade" sortOrder="60"/>
                     </resource>
