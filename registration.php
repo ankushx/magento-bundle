@@ -9,6 +9,6 @@ ComponentRegistrar::register(
 
 ComponentRegistrar::register(
     ComponentRegistrar::MODULE,
-    'Vendor_ModuleTwo',
-    __DIR__ . '/ModuleTwo'
+    'MiniOrange_MagentoSocialLogin',
+    __DIR__ . '/MagentoSocialLogin'
 );

@@ -1,0 +1,198 @@
+<!--
+    This template file is for the Sign In settings.
+    File acts as a view file for our Sign In settings.
+-->
+<?php
+    // initialize all values
+    $customerLink = $this->showCustomerLink() ?'checked':'';
+    $isSocialLoginConfigured = $this->isSocialLoginConfigured() && $this->isEnabled();
+    $disabled  = $isSocialLoginConfigured ? "" : 'disabled title="Disabled. Configure your Service Provider" ';
+    $formKey = $this->getFormKey();
+    $logoutUrl = $this->getAdminLogoutUrl();
+    $premiumlink = $this->getExtensionPageUrl('upgrade');
+    $websites= $this->getWebsiteCollection();
+?>
+
+<div class="row">
+<div class="col-sm-8"> 
+   <div class="page" id="samlsettings">
+      <div class="mosp_table_layout">
+     <h3>Sigin in Settings</h3>
+         <form id="signInSettings" method="post" action="">
+          <input type="hidden" name="form_key" value="<?php echo $escaper->escapeHtmlAttr($formKey); ?>" />
+            <input type="hidden" name="option" value="saveSingInSettings" >
+            <div class="mo_note">
+                                <span class="btn-link" id="role_mapping" href="">What is Sign in Settings?</span>
+                                 <div  class ="premium_feature" style="display : inline-block">
+                                <span style="color:red">&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp *</span> (Available in the <a href="<?php print_r($this->getExtensionPageUrl('upgrade')); ?>" 
+                        class="premium btn-link">premium</a> version)</span>
+                                </div>
+                                <div style="display:none" class="show_info">
+                                    <ol>
+                                        <br>
+                                        <li>Sign in Settings provide Admins to set different settings required for social login.</li>
+                                        <li>In Premium plan admins can select particular websites for which they want to show social login.</li>
+                                        <li>Admins can select on which page social login button should be shown and where customer should be redirected after login via social logins</li>
+                                        <li>Admins choose how UI of social login button should look like and how it should be popup</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <br>
+            <h3>Select website</h3>
+      <input type="hidden" name="option" value="multisite_settings" />
+                    <select  id="select_wesbite" name="select_wesbite" style="width:150px;">
+
+                  <?php        foreach($websites as $specific_website)
+                      {
+                          
+                           echo '<option id="select_website" 
+                           name="' . $this->escapeHtmlAttr($specific_website->getName()) . '" 
+                           value="' . $this->escapeHtmlAttr($specific_website->getId()) . '">'
+                           . $this->escapeHtml($specific_website->getName()) . '</option>';
+                      }    
+                  ?>
+                    </select> 
+                    <hr>
+                    
+                  <h4><b>Show Social Login Buttons on:</b></h4>
+                  <div style="margin-left:17px;margin-top:2%;">
+                     <input type="checkbox" name="mo_oauth_show_admin_link" id="mo_oauth_show_admin_link" 
+                        disabled checked></input> Customer Login Page.
+                     <br><br>
+                     <input type="checkbox" name="mo_oauth_show_customer_link" id="mo_oauth_show_customer_link" 
+                       value="true" disabled></input>  Customer Create Page. 
+                     <br><br>
+                     <input type="checkbox" name="mo_oauth_show_customer_link" id="mo_oauth_show_customer_link" 
+                     value="true" disabled> </input> Cart Page. 
+                   <br><br>
+                   <input type="checkbox" name="mo_oauth_show_customer_link" id="mo_oauth_show_customer_link" 
+                   value="true" disabled> </input> Checkout Page. 
+                 <br><br>
+                     <input type="checkbox" name="mo_oauth_show_customer_link" id="mo_oauth_show_customer_link" 
+                       value="true" checked disabled> </input> Any Custom Page. 
+                    <br><br>
+                    <i>Use following URL in your custom button for authentication from social platform :</i> 
+                    <br>
+                    <br>
+                     <div  name="mo_oauth_show_customer_link" id="mo_oauth_show_customer_link" style="width:80%; word-wrap: break-word; border-style: solid;border-width: 2px;border-color:#C2C2C2;background:#f1f0f0;">
+                      <i> <?php print_r($this->getBaseUrl()."mosocial/actions/sendAuthorizationRequest/?provider={google/facebook/twitter/linkedin/}&relayState={redirect URL}"); ?> </i>
+                     </div>
+                       <br>
+                  </div>
+                  <h3>Advanced Options:</h3>
+                  <hr>
+                  <label class="switch">
+                        <input type="checkbox" name="module_tfa" id="module_tfa" disabled
+                          value="true" checked></input>  <span class="slider round"></span>  </label>&nbsp &nbsp Auto create customers if they don't have account.
+                 <table>
+                  <tr>
+                     <td  class="table_col1"><b> Redirect after Login	:</b></td>
+                     <td class="table_col2"><select style="width:100%;" class="dropdown_width">  
+                  <option>Home Page</option>
+                  <option>Current Page</option>
+                  <option selected>Account Dashboard</option>
+                  <option>Shopping cart page</option>
+                  <option>Checkout Page</option>
+                  <option>Custom URL</option>
+                  
+                  </select></td>
+                  </tr>
+                  <tr>
+                     <td   class="table_col1"><b>Use popup login	:</b></td>
+                     <td class="table_col2">                  
+                        <select style="width:100%;" class="dropdown_width">  
+                  <option>Quick Login</option>
+                  <option>Popup login</option>
+                  <option>Popup slide</option>
+                  <option>Stickey Social login bar</option>
+                  
+                  </select></td>
+                  </tr>
+
+                  <tr>
+                     <td  class="table_col1"><b>Customise social login Icons:</b></td>
+                     <td  class="table_col2">
+                        <select style="width:100%;" class="dropdown_width">
+                  <option>Google</option>
+                  <option>Facebook</option>
+                  <option>Linkedin</option>
+                  <option>Twitter</option>
+                  </select></td>
+                     <td class="table_col3">                  
+                     <select style="width:100%;" class="dropdown_width" id="social_login_icon_ui" onchange="login_icon_div()" >
+                 <option id="long_button">Long Button</option>
+                 <option id="round">Round</option>
+                 <option id="rounded_edge">Rounded Edges</option>
+                 <option id="square">Square</option> 
+                  </select></td>
+                  </tr>
+
+                     </table>
+                 
+                  <div id="long_button_id" style="display:block;margin-left:26%">
+                  <table style="width:500px">
+                  <tr><td style="width:42%">Width:</td>
+                  <td style="width:65%"> <input style="width:55%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width:42%">Height:</td>
+                  <td style="width:65%"><input style="width:55%" type="text"  disabled></td>
+                  </tr>
+                  <tr><td style="width:42%">Corner Radius:</td>
+                  <td style="width:65%"><input style="width:55%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width:42%">Backgroud Color:</td>
+                  <td style="width:65%"><input style="width:55%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width:42%">Text Color:</td>
+                  <td style="width:65%"><input style="width:55%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width:42%">Text to show on login button:</td>
+                  <td style="width:65%"><input style="width:55%" type="text" placeholder="Login with..." disabled></td>
+                  </tr>
+                  </table>
+                     </div>
+
+                     <div id="round_button_id" style="display:none;margin-left:26%">
+                  <table  style="width:500px">
+                  <tr><td style="width:51%">Radius of circular icon:</td>
+                  <td style="width:65%"><input style="width:83%" type="text" disabled></td>
+                  </tr>
+                  </table>
+                     </div>
+
+                     <div id="roundededge_button_id" style="display:none;margin-left:26%">
+                  <table  style="width:500px">
+                  <tr><td style="width:51%">Width:</td>
+                  <td style="width:65%"><input style="width:83%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width: 51%">Height:</td>
+                  <td style="width:65%"><input style="width:83%" type="text" disabled></td>
+                  </tr>
+                  <tr><td style="width:51%">Corner Radius:</td>
+                  <td style="width:65%"><input style="width:83%" type="text" disabled></td>
+                  </tr>
+
+                  </table>
+                     </div>
+                     <div id="square_button_id" style="display:none;margin-left:26%">
+                  <table  style="width:500px">
+                  <tr><td style="width:51%">Side Length:</td>
+                  <td style="width:65%"><input style="width:83%" type="text" disabled></td>
+                  </tr>
+
+                  </table>
+
+                     </div>
+                     <br>
+                     <br>
+                     <div>
+                  <input class="btn-round" type="submit" style="width:100px;margin-left:27%" name="submit" value="Save" disabled/>
+                     </div>
+         </form>
+      </div>
+</div>
+
+
+
+
+

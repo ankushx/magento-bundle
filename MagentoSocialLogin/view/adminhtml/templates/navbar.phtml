@@ -1,0 +1,52 @@
+<?php
+use MiniOrange\MagentoSocialLogin\Helper\Curl;
+use MiniOrange\MagentoSocialLogin\Helper\SocialConstants;
+// initialize all variables
+$socialloginsettings = $this->getExtensionPageUrl('socialloginsettings');
+$signinsettings = $this->getExtensionPageUrl('signinsettings');
+$useranalytics = $this->getExtensionPageUrl('useranalytics');
+$account = $this->getExtensionPageUrl('account');
+$attrsettings = $this->getExtensionPageUrl('attrsettings');
+$rolesettings = $this->getExtensionPageUrl('rolesettings');
+$support = $this->getExtensionPageUrl('support');
+$pricing = $this->getExtensionPageUrl('upgrade');
+
+$activeTab = $this->getCurrentActiveTab();
+$checkDataAdded = $this->checkDataAdded();
+if($checkDataAdded == null)
+{ 
+    $timeStamp = $this->getTimeStamp();
+    $currentAdminUser =  $this->getCurrentAdminUser();  
+    $adminEmail = $currentAdminUser['email'];
+    $domain = $this->getBaseUrl();
+    $pluginFirstPageVisit = $activeTab;
+    $environmentName =  $this->getEdition();
+    $environmentVersion = $this->getProductVersion();
+    $freeInstalledDate = $this->getCurrentDate();
+
+    $data = [
+       'timeStamp' => $timeStamp,
+       'adminEmail' => $adminEmail,
+       'domain' => $domain,
+       'pluginFirstPageVisit' => $pluginFirstPageVisit,
+       'environmentName' => $environmentName,
+       'environmentVersion' => $environmentVersion,
+       'FreeInstalledDate' => $freeInstalledDate
+    ];
+    
+    Curl::submit_to_magento_team($data);
+    $this->dataAdded();
+}
+?>
+<div style=" padding: 0 1%;">
+            <div class="topnav" id="myTopnav">
+
+                
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'socialloginsettings' ? 'active' : '') ?>" href="<?= $this->escapeUrl($socialloginsettings) ?>"> Social Login Settings</a>
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'signinsettings' ? 'active' : '') ?>" href="<?= $this->escapeUrl($signinsettings) ?>"> Sign in Settings</a>
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'useranalytics' ? 'active' : '') ?>" href="<?= $this->escapeUrl($useranalytics) ?>"> User Analytics</a>
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'attrsettings' ? 'active' : '') ?>" href="<?= $this->escapeUrl($attrsettings) ?>"> Attribute Mapping</a>
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'rolesettings' ? 'active' : '') ?>" href="<?= $this->escapeUrl($rolesettings) ?>"> Role Mapping</a>
+                <a class="nav-tab <?= ($this->escapeHtmlAttr($activeTab) === 'upgrade' ? 'active' : '') ?>" href="<?= $this->escapeUrl($pricing) ?>"> Upgrade</a>
+            </div>
+        </div>
