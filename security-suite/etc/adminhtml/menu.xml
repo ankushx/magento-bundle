@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/menu.xsd">
+    <menu>
+        <add id="MiniOrange_SecuritySuite::SecuritySuite"
+             title="Security Suite"
+             module="MiniOrange_SecuritySuite"
+             sortOrder="50"
+             resource="MiniOrange_SecuritySuite::SecuritySuite"/>
+
+        
+        <!-- Use controller for dynamic URL generation -->
+        <add id="MiniOrange_SecuritySuite::twofactor"
+             title="Two-Factor Authentication"
+             module="MiniOrange_SecuritySuite"
+             sortOrder="10"
+             parent="MiniOrange_SecuritySuite::SecuritySuite"
+             action="securitysuite/redirect/index/module/twofa"
+             resource="MiniOrange_SecuritySuite::twofactor"/>
+
+             <add id="MiniOrange_SecuritySuite::social-login"
+             title="Social Login"
+             module="MiniOrange_SecuritySuite"
+             sortOrder="20"
+             parent="MiniOrange_SecuritySuite::SecuritySuite"
+             action="securitysuite/redirect/index/module/social-login"
+             resource="MiniOrange_SecuritySuite::social-login"/>
+
+
+               <!--
+               Adding a upgrade menu item to show users the different plans
+                    that we have and that user can upgrade to. Parent Menu Item is the
+                    miniOrange Security Suite menu item mentioned above. Action is the controllerAction
+                    to be called when menu item is clicked.
+               -->
+
+               <add id="MiniOrange_SecuritySuite::Account"
+               title="Account"
+               module="MiniOrange_SecuritySuite"
+               sortOrder="100"
+               parent="MiniOrange_SecuritySuite::SecuritySuite"
+               action="securitysuite/redirect/index/module/twofa"
+               resource="MiniOrange_SecuritySuite::Account"/>
+               
+               <!--
+               Adding a upgrade menu item to show users the different plans
+                    that we have and that user can upgrade to. Parent Menu Item is the
+                    miniOrange Security Suite menu item mentioned above. Action is the controllerAction
+                    to be called when menu item is clicked.
+               -->
+               <add id="MiniOrange_SecuritySuite::upgrade"
+               title="Upgrade"
+               module="MiniOrange_SecuritySuite"
+               sortOrder="100"
+               parent="MiniOrange_SecuritySuite::SecuritySuite"
+               action="securitysuite/upgrade"
+               resource="MiniOrange_SecuritySuite::upgrade"/>
+
+    </menu>
+</config>
