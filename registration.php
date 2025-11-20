@@ -12,3 +12,9 @@ ComponentRegistrar::register(
     'MiniOrange_MagentoSocialLogin',
     __DIR__ . '/MagentoSocialLogin'
 );
+
+ComponentRegistrar::register(
+    ComponentRegistrar::MODULE,
+    'MiniOrange_SecuritySuite',
+    __DIR__ . '/SecuritySuite'
+);

@@ -33,16 +33,19 @@
   },
   "replace": {
       "miniorange/miniorange-social-login": "self.version",
-      "miniorange/miniorange-2fa": "self.version"
+      "miniorange/miniorange-2fa": "self.version",
+      "miniorange_inc/security-suite": "self.version"
   },
   "autoload": {
       "files": [
           "miniorange-social-login/registration.php",
-          "miniorange-2fa/registration.php"
+          "miniorange-2fa/registration.php",
+          "security-suite/registration.php"
       ],
       "psr-4": {
           "MiniOrange\\MagentoSocialLogin\\": "miniorange-social-login",
-          "MiniOrange\\TwoFA\\": "miniorange-2fa"
+          "MiniOrange\\TwoFA\\": "miniorange-2fa",
+          "MiniOrange\\SecuritySuite\\": "security-suite"
       }
   },
   "minimum-stability": "dev",
