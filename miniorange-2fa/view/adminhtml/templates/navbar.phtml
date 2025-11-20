@@ -1,0 +1,53 @@
+<?php
+
+use MiniOrange\TwoFA\Helper\Curl;
+
+// initialize all variables
+$account = $block->getExtensionPageUrl('account');
+$signinsettings = $block->getExtensionPageUrl('signinsettings');
+$support = $block->getExtensionPageUrl('support');
+$pricing = $block->getExtensionPageUrl('upgrade');
+$customgateway=$block->getExtensionPageUrl('customgateway');
+$usermanagement=$block->getExtensionPageUrl('usermanagement');
+$activeTab = $block->getCurrentActiveTab();
+$checkDataAdded = $block->checkDataAdded();
+
+if($checkDataAdded == null)
+{  $currentAdminUser =  $block->getCurrentAdminUser();  
+   $adminEmail = $currentAdminUser['email'];
+   $domain = $block->getBaseUrl();
+   $environmentName = $block->getEdition();
+   $environmentVersion = $block->getProductVersion();
+   $miniorangeAccountEmail= $block->getCustomerEmail();
+   $trackingDate = $block->getCurrentDate();
+   $autoCreateLimit = '';
+   $frontendMethod = '';
+   $backendMethod = '';
+   $timeStamp = $block->getTimeStamp();
+   $freeInstalledDate = $block->getCurrentDate();
+ 
+   Curl::submit_to_magento_team($timeStamp,
+   $adminEmail,
+   $domain,
+   $miniorangeAccountEmail,
+   $activeTab,
+   $environmentName,
+   $environmentVersion,
+   $freeInstalledDate,
+   $backendMethod,
+   $frontendMethod,
+   '',
+   $autoCreateLimit);
+
+   $block->dataAdded();
+}
+
+echo '	<div style=" padding: 0 1%;">
+            <div class="topnav" id="myTopnav">
+            <a class="nav-tab '.($activeTab == 'account' ? 'active' : '').'" href=" '.$block->escapeUrl($account).' ">Account</a>
+            <a class="nav-tab '.($activeTab == 'signinsettings' ? 'active' : '').'" href=" '.$block->escapeUrl($signinsettings).' ">Two Factor Settings</a>
+            <a class="nav-tab '.($activeTab == 'usermanagement' ? 'active' : '').'" href=" '.$block->escapeUrl($usermanagement).' ">User management</a>
+            <a class="nav-tab '.($activeTab == 'customgateway' ? 'active' : '').'" href=" '.$block->escapeUrl($customgateway).' ">Custom Gateway</a>
+            <a class="nav-tab '.($activeTab == 'upgrade' ? 'active' : '').'" href=" '.$block->escapeUrl($pricing).' ">Upgrade</a>
+                </div>
+        </div>' ;
