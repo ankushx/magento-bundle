@@ -18,15 +18,12 @@ class MenuBuilderPlugin
             return $menu;
         }
 
-        // Hide MiniOrange_TwoFA menu items but keep functionality
+        // Hide child module menu items but keep functionality (accessed via Security Suite)
         $menusToHide = [
-            'MiniOrange_TwoFA::TwoFA',              
-            'MiniOrange_BruteForce::BruteForce',
-            'MiniOrange_AdminActivity::AdminActivity',
-            'MiniOrange_RateLimiting::RateLimiting',
-            'MiniOrange_SSO::SSO',
-            'MiniOrange_AzureSSO::OAuth',
-            'MiniOrange_MagentoSocialLogin::SocialLogin'
+            'MiniOrange_TwoFA::TwoFA',
+            'MiniOrange_IpRestriction::IpRestriction',
+            'MiniOrange_BruteForceProtection::BruteForceProtection',
+            'MiniOrange_AdminLogs::AdminLogs'
         ];
 
         foreach ($menusToHide as $menuId) {

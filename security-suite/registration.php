@@ -8,7 +8,9 @@
 // Conditionally register child modules if they exist
 $childModules = [
     'TwoFactorAuth' => __DIR__ . '/../TwoFactorAuth/registration.php',
-    'MagentoSocialLogin' => __DIR__ . '/../MagentoSocialLogin/registration.php'
+    'IpRestriction' => __DIR__ . '/../IpRestriction/registration.php',
+    'BruteForceProtection' => __DIR__ . '/../BruteForceProtection/registration.php',
+    'AdminLogs' => __DIR__ . '/../AdminLogs/registration.php'
 ];
 
 foreach ($childModules as $moduleName => $registrationPath) {

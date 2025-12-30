@@ -7,7 +7,7 @@
         "magento two factor", "magento oauth sso", "magento azure sso", "magento brute force", "magento rate limiting", "magento admin activity"
     ],
     "type": "magento2-module",
-    "version": "1.0.6",
+    "version": "1.0.0",
     "license": [
         "Commercial"
     ],
@@ -30,6 +30,8 @@
     "require": {
         "php": "~7|~8",
         "miniorange_inc/miniorange-2fa": "*",
-        "miniorange_inc/miniorange-social-login": "*"
+        "miniorange_inc/miniorange-ip-restriction": "*",
+        "miniorange_inc/miniorange-brute-force-protection": "*",
+        "miniorange_inc/miniorange-admin-logs": "*"
     }
 }

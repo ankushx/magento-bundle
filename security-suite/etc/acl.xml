@@ -11,8 +11,12 @@
                     <resource id="MiniOrange_SecuritySuite::SecuritySuite" title="Security Suite" sortOrder="50">
                         <!-- Two-Factor Authentication ACL definition -->
                         <resource id="MiniOrange_SecuritySuite::twofactor" title="Two-Factor Authentication" sortOrder="10"/>
-                        <!-- Social Login ACL definition -->
-                        <resource id="MiniOrange_SecuritySuite::social_login" title="Social Login" sortOrder="70"/>
+                        <!-- IP Restriction ACL definition -->
+                        <resource id="MiniOrange_SecuritySuite::ip_restriction" title="IP Restriction" sortOrder="20"/>
+                        <!-- Brute Force Protection ACL definition -->
+                        <resource id="MiniOrange_SecuritySuite::brute_force_protection" title="Brute Force Protection" sortOrder="30"/>
+                        <!-- Admin Logs ACL definition -->
+                        <resource id="MiniOrange_SecuritySuite::admin_logs" title="Admin Logs" sortOrder="40"/>
                         <!-- Account ACL definition -->
                         <resource id="MiniOrange_SecuritySuite::account" title="Account" sortOrder="50"/>
                         <!-- Upgrade ACL definition -->

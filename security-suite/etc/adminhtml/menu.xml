@@ -17,13 +17,29 @@
              action="securitysuite/redirect/index/module/twofa"
              resource="MiniOrange_SecuritySuite::twofactor"/>
 
-             <add id="MiniOrange_SecuritySuite::social_login"
-             title="Social Login"
+        <add id="MiniOrange_SecuritySuite::ip_restriction"
+             title="IP Restriction"
              module="MiniOrange_SecuritySuite"
              sortOrder="20"
              parent="MiniOrange_SecuritySuite::SecuritySuite"
-             action="securitysuite/redirect/index/module/social-login"
-             resource="MiniOrange_SecuritySuite::social_login"/>
+             action="securitysuite/redirect/index/module/ip-restriction"
+             resource="MiniOrange_SecuritySuite::ip_restriction"/>
+
+        <add id="MiniOrange_SecuritySuite::brute_force_protection"
+             title="Brute Force Protection"
+             module="MiniOrange_SecuritySuite"
+             sortOrder="30"
+             parent="MiniOrange_SecuritySuite::SecuritySuite"
+             action="securitysuite/redirect/index/module/brute-force-protection"
+             resource="MiniOrange_SecuritySuite::brute_force_protection"/>
+
+        <add id="MiniOrange_SecuritySuite::admin_logs"
+             title="Admin Logs"
+             module="MiniOrange_SecuritySuite"
+             sortOrder="40"
+             parent="MiniOrange_SecuritySuite::SecuritySuite"
+             action="securitysuite/redirect/index/module/admin-logs"
+             resource="MiniOrange_SecuritySuite::admin_logs"/>
 
 
                <!--
