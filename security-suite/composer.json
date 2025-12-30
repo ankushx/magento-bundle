@@ -7,7 +7,7 @@
         "magento two factor", "magento oauth sso", "magento azure sso", "magento brute force", "magento rate limiting", "magento admin activity"
     ],
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.0.6",
     "license": [
         "Commercial"
     ],
