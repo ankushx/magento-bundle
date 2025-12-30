@@ -43,12 +43,14 @@
     },
     "autoload": {
         "files": [
+            "security-suite/registration.php",
             "adminlogs/registration.php",
             "miniorange-2fa/registration.php",
             "miniorange-magento-brute-force-protection/registration.php",
             "miniorange-magento-ip-restriction/registration.php"
         ],
         "psr-4": {
+            "MiniOrange\\SecuritySuite\\": "security-suite",
             "MiniOrange\\AdminLogs\\": "adminlogs",
             "MiniOrange\\TwoFA\\": "miniorange-2fa",
             "MiniOrange\\BruteForceProtection\\": "miniorange-magento-brute-force-protection",

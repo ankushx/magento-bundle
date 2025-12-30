@@ -4,7 +4,6 @@
     'MiniOrange_SecuritySuite',
     __DIR__
 );
-
 // Conditionally register child modules if they exist
 $childModules = [
     'TwoFactorAuth' => __DIR__ . '/../TwoFactorAuth/registration.php',
@@ -24,3 +23,4 @@ foreach ($childModules as $moduleName => $registrationPath) {
         );
     }
 }
+
