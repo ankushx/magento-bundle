@@ -11,6 +11,13 @@ class MenuBuilderPlugin
         $this->moduleManager = $moduleManager;
     }
 
+    /**
+     * After get result
+     *
+     * @param \Magento\Backend\Model\Menu\Builder $subject
+     * @param \Magento\Backend\Model\Menu $menu
+     * @return \Magento\Backend\Model\Menu
+     */
     public function afterGetResult(\Magento\Backend\Model\Menu\Builder $subject, $menu)
     {
         // Only proceed if our Security Suite is enabled
@@ -21,9 +28,9 @@ class MenuBuilderPlugin
         // Hide child module menu items but keep functionality (accessed via Security Suite)
         $menusToHide = [
             'MiniOrange_TwoFA::TwoFA',
-            'MiniOrange_IpRestriction::IpRestriction',
+            'MiniOrange_IpRestriction::iprestriction',
             'MiniOrange_BruteForceProtection::BruteForceProtection',
-            'MiniOrange_AdminLogs::AdminLogs'
+            'MiniOrange_AdminLogs::main_menu'
         ];
 
         foreach ($menusToHide as $menuId) {

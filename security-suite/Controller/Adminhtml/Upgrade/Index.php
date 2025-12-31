@@ -134,24 +134,6 @@ class Index extends Action implements HttpGetActionInterface
     }
 
     /**
-     * This function checks if the user has registered himself
-     * and throws an Exception if not registered. Checks if the
-     * admin key and API key are saved in the database.
-     * Note: This is a placeholder implementation. You may need to
-     * implement the actual validation logic based on your requirements.
-     *
-     * @throws \Exception
-     */
-    protected function checkIfValidPlugin()
-    {
-        // Placeholder implementation - you may need to implement actual validation
-        // For example, check if admin key and API key are saved in database
-        // if (!$this->hasValidCredentials()) {
-        //     throw new \Exception(__('Plugin is not properly registered.'));
-        // }
-    }
-
-    /**
      * Is the user allowed to view the Upgrade settings.
      * This is based on the ACL set by the admin in the backend.
      * Works in conjugation with acl.xml

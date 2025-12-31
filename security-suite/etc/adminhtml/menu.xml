@@ -41,21 +41,6 @@
              action="securitysuite/redirect/index/module/admin-logs"
              resource="MiniOrange_SecuritySuite::admin_logs"/>
 
-
-               <!--
-               Adding a upgrade menu item to show users the different plans
-                    that we have and that user can upgrade to. Parent Menu Item is the
-                    miniOrange Security Suite menu item mentioned above. Action is the controllerAction
-                    to be called when menu item is clicked.
-               -->
-
-               <add id="MiniOrange_SecuritySuite::account"
-               title="Account"
-               module="MiniOrange_SecuritySuite"
-               sortOrder="100"
-               parent="MiniOrange_SecuritySuite::SecuritySuite"
-               action="securitysuite/redirect/index/module/twofa"
-               resource="MiniOrange_SecuritySuite::account"/>
                
                <!--
                Adding a upgrade menu item to show users the different plans

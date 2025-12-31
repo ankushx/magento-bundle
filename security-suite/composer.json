@@ -7,7 +7,7 @@
         "magento two factor", "magento oauth sso", "magento azure sso", "magento brute force", "magento rate limiting", "magento admin activity"
     ],
     "type": "magento2-module",
-    "version": "1.0.6",
+    "version": "1.0.0",
     "license": [
         "Commercial"
     ],
@@ -20,18 +20,18 @@
     "authors": [
         {
             "name": "miniOrange Team",
-            "homepage": "https://www.miniorange.com/",
-            "email": "magentosupport@xecurify.com"
+            "homepage": "http://www.miniorange.com/",
+            "email": "info@xecurify.com"
         }
     ],
     "support": {
-        "email": "magentosupport@xecurify.com"
+        "email": "info@xecurify.com"
     },
     "require": {
-        "php": "~7|~8",
+        "php": "~5|~6|~7|~8",
         "miniorange_inc/miniorange-2fa": "*",
-        "miniorange_inc/miniorange-ip-restriction": "*",
-        "miniorange_inc/miniorange-brute-force-protection": "*",
-        "miniorange_inc/miniorange-admin-logs": "*"
+        "miniorange_inc/miniorange-magento-ip-restriction": "*",
+        "miniorange_inc/miniorange-magento-brute-force-protection": "*",
+        "miniorange_inc/adminlogs": "*"
     }
 }

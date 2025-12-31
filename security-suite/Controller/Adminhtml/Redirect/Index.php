@@ -16,6 +16,11 @@ class Index extends \Magento\Backend\App\Action
         $this->backendUrl = $backendUrl;
     }
 
+    /**
+     * Execute the action
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     public function execute()
     {
         // Get the module parameter from the request
@@ -36,6 +41,11 @@ class Index extends \Magento\Backend\App\Action
         }
     }
 
+    /**
+     * Redirect to the Two-Factor Authentication module
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     protected function redirectToTwoFA()
     {
         // Check if MiniOrange TwoFA module is installed and enabled
@@ -48,11 +58,16 @@ class Index extends \Magento\Backend\App\Action
         }
     }
 
+    /**
+     * Redirect to the IP Restriction module
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     protected function redirectToIpRestriction()
     {
         // Check if MiniOrange IP Restriction module is installed and enabled
         if ($this->moduleManager->isEnabled('MiniOrange_IpRestriction')) {
-            $miniorangeUrl = $this->backendUrl->getUrl('moiprestriction/settings/index');
+            $miniorangeUrl = $this->backendUrl->getUrl('iprestriction/iprestrict/index');
             return $this->_redirect($miniorangeUrl);
         } else {
             $this->messageManager->addError(__('IP Restriction module is not installed.'));
@@ -60,11 +75,16 @@ class Index extends \Magento\Backend\App\Action
         }
     }
 
+    /**
+     * Redirect to the Brute Force Protection module
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     protected function redirectToBruteForceProtection()
     {
         // Check if MiniOrange Brute Force Protection module is installed and enabled
         if ($this->moduleManager->isEnabled('MiniOrange_BruteForceProtection')) {
-            $miniorangeUrl = $this->backendUrl->getUrl('mobruteforceprotection/settings/index');
+            $miniorangeUrl = $this->backendUrl->getUrl('mobruteforce/bruteforcesettings/index');
             return $this->_redirect($miniorangeUrl);
         } else {
             $this->messageManager->addError(__('Brute Force Protection module is not installed.'));
@@ -72,11 +92,16 @@ class Index extends \Magento\Backend\App\Action
         }
     }
 
+    /**
+     * Redirect to the Admin Logs module
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     protected function redirectToAdminLogs()
     {
         // Check if MiniOrange Admin Logs module is installed and enabled
         if ($this->moduleManager->isEnabled('MiniOrange_AdminLogs')) {
-            $miniorangeUrl = $this->backendUrl->getUrl('moadminlogs/logs/index');
+            $miniorangeUrl = $this->backendUrl->getUrl('adminlogs/configuration/index');
             return $this->_redirect($miniorangeUrl);
         } else {
             $this->messageManager->addError(__('Admin Logs module is not installed.'));
