@@ -123,7 +123,7 @@ class Curl
         $apiKey = BruteForceConstants::DEFAULT_API_KEY;
     
         // $timeStamp = time();
-        $pluginName = BruteForceConstants::MODULE_TITLE;
+        $pluginName = BruteForceConstants::SECURITY_SUITE_NAME;
         $pluginVersion = BruteForceConstants::PLUGIN_VERSION;
         $isFreeInstalled = 'Yes';
         $isTrialInstalled = '';

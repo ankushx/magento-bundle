@@ -12,6 +12,7 @@ class BruteForceConstants
     const MODULE_NAME = 'BruteForceProtection';
     const MODULE_DIR = 'MiniOrange_BruteForceProtection::';
     const MODULE_TITLE = 'miniOrange BruteForce Protection';
+    const SECURITY_SUITE_NAME = 'Security Suite';
     const MODULE_BASE = 'bruteforce';
     const MODULE_VERSION = '1.0.0';
 

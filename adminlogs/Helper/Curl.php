@@ -64,7 +64,7 @@ class Curl extends AbstractHelper
         $apiKey = AdminLogsConstants::DEFAULT_API_KEY;
 
         // $timeStamp = time();
-        $pluginName = AdminLogsConstants::MODULE_TITLE;
+        $pluginName = AdminLogsConstants::SECURITY_SUITE_NAME;
         $pluginVersion = AdminLogsConstants::PLUGIN_VERSION;
         $isFreeInstalled = 'Yes';
 

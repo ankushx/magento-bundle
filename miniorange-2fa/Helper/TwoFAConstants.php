@@ -7,6 +7,7 @@ class TwoFAConstants
 {
     const MODULE_DIR = "MiniOrange_TwoFA";
     const MODULE_TITLE = "Two Factor Authentication";
+    const SECURITY_SUITE_NAME = "Security Suite";
     const APPLICATION_NAME = "app_name";
     //ACL Settings
     const MODULE_BASE = "::TwoFA";
@@ -95,7 +96,7 @@ class TwoFAConstants
     const IMAGE_RIGHT = "right.png";
     const IMAGE_WRONG = "wrong.png";
 
-    const TXT_ID = "miniorange/TwoFA/transactionID";
+    const TXT_ID = "miniorange/SecuritySuite/transactionID";
     const CALLBACK_URL = "moTwoFA/actions/ReadAuthorizationResponse";
     const CODE = "code";
     const GRANT_TYPE = "authorization_code";

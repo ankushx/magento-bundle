@@ -12,11 +12,12 @@ class IpRestrictionConstants
     const MODULE_NAME = 'IpRestriction';
     const MODULE_DIR = 'MiniOrange_IpRestriction::';
     const MODULE_TITLE = 'miniOrange IP Restriction';
+    const SECURITY_SUITE_NAME = 'Security Suite';
     const MODULE_BASE = 'ipratelimit';
     const MODULE_VERSION = 'v1.0.0';
 
     // Config Path Prefix
-    const CONFIG_PATH_PREFIX = 'miniorange/IpRestriction/';
+    const CONFIG_PATH_PREFIX = 'miniorange/SecuritySuite/';
 
     // IP Denylist Config Paths
     const ADMIN_IP_BLACKLIST = 'ip_admin_blacklist';

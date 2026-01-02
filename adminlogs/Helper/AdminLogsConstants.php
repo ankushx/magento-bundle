@@ -7,6 +7,7 @@ class AdminLogsConstants
 {
     const MODULE_DIR         = 'MiniOrange_AdminLogs';
     const MODULE_TITLE       = 'miniOrange Admin Activity Log';
+    const SECURITY_SUITE_NAME = 'Security Suite';
     const VERSION            = "v1.0.0";
 
     //ACL Settings
@@ -17,8 +18,8 @@ class AdminLogsConstants
     const MODULE_SUPPORT    = '::support';
 
     // Admin Users Limit and Count (encrypted)
-    const ADMIN_USERS_LIMIT = 'miniorange/adminlogs/admin_users_limit';
-    const ADMIN_USERS_COUNT = 'miniorange/adminlogs/admin_users_count';
+    const ADMIN_USERS_LIMIT = 'miniorange/SecuritySuite/admin_users_limit';
+    const ADMIN_USERS_COUNT = 'miniorange/SecuritySuite/admin_users_count';
 
     //plugin constants
     const DEFAULT_CUSTOMER_KEY     = "16555";
@@ -38,8 +39,8 @@ class AdminLogsConstants
     const AREA_OF_INTEREST         = 'Magento Admin Activity Log';
 
     //anusha
-    const TIME_STAMP = 'miniorange/adminlogs/timestamp';
-    const DATA_ADDED = 'miniorange/adminlogs/data_added';
+    const TIME_STAMP = 'miniorange/SecuritySuite/timestamp';
+    const DATA_ADDED = 'miniorange/SecuritySuite/data_added';
     const PLUGIN_PORTAL_HOSTNAME  = "https://magento.shanekatear.in/plugin-portal";
     const PLUGIN_VERSION = 'v1.0.0';
     const PLUGIN_NAME = 'miniOrange Admin Activity Log';

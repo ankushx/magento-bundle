@@ -150,7 +150,7 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
 
             if ($this->shouldInvokeInlineTwoFA()) {
                 $userDetails = $this->twofaUtility->getMoTfaUserDetails('miniorange_tfa_users', $username);
-                if (is_array(value: $userDetails) && sizeof($userDetails) > 0 && $this->twofaUtility->isTwoFADisabled($userDetails)) {
+                if (is_array($userDetails) && sizeof($userDetails) > 0 && $this->twofaUtility->isTwoFADisabled($userDetails)) {
                     $this->twofaUtility->log_debug("Execute LoginPost: 2FA is disabled for this user, proceeding with default login");
                     return $this->defaultLoginFlow($username, $customer, $resultRedirect, $user_limit=false);
                 }

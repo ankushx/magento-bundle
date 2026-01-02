@@ -159,7 +159,7 @@ class Data extends AbstractHelper
     public function getStoreConfig($config)
     {
         $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
-        return $this->scopeConfig->getValue('miniorange/BruteForceProtection/' . $config, $storeScope);
+        return $this->scopeConfig->getValue('miniorange/SecuritySuite/' . $config, $storeScope);
     }
 
     public function getStoreCustomConfig( $config )
@@ -177,7 +177,7 @@ class Data extends AbstractHelper
      */
     public function setStoreConfig($config, $value)
     {
-        $this->configWriter->save('miniorange/BruteForceProtection/' . $config, $value);
+        $this->configWriter->save('miniorange/SecuritySuite/' . $config, $value);
     }
     
 
