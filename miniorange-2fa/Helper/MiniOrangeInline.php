@@ -325,20 +325,29 @@ public function testing($TwoFAUtility){
         $user    = new miniOrangeUser();
         $current_username = $TwoFAUtility->getSessionValue( 'mousername');
         $row=$TwoFAUtility->getMoTfaUserDetails('miniorange_tfa_users',$current_username);
+        
+        if(empty($row) || !is_array($row) || sizeof($row) == 0 || !isset($row[0]['active_method'])){
+            $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: ERROR - User not found in database or active_method not set");
+            return false;
+        }
+        
         $method  = $row[0]['active_method'];
+        $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: Active method: " . $method);
 
         if( "GoogleAuthenticator" === $method ) {
-
-            $response = json_decode($TwoFAUtility->verifyGauthCode( $this->postValue['Passcode'] , $current_username ));
-            $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: google auth response");
+            if(!isset($this->postValue['Passcode']) || empty($this->postValue['Passcode'])){
+                $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: ERROR - Passcode not provided");
+                return false;
+            }
+            $response = json_decode($TwoFAUtility->verifyGauthCode( $this->postValue['Passcode'] , $current_username ), true);
+            $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: google auth response status: " . (isset($response['status']) ? $response['status'] : 'UNKNOWN'));
         } else {
             $response= $user->validate($current_username,$this->postValue['Passcode'],$method,$TwoFAUtility,NULL,true);
-            $response=json_decode($response);
-            $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: Method response");
+            $response=json_decode($response, true);
+            $TwoFAUtility->log_debug("MiniOrangeInline.php : execute: TFAValidate: Method response status: " . (isset($response['status']) ? $response['status'] : 'UNKNOWN'));
         }
 
-
-        return $response->status === 'SUCCESS' ? true : false;
+        return isset($response['status']) && $response['status'] === 'SUCCESS' ? true : false;
 }
 
 

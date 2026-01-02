@@ -129,6 +129,11 @@ class Index extends BaseAdminAction
         $this->twofautility->setStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION,NULL);
         $this->twofautility->setStoreConfig(TwoFAConstants::REGISTER_CHECKBOX ,NULL);
         $this->twofautility->setStoreConfig(TwoFAConstants::REGISTER_OTP_TYPE ,NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_ADMIN_RULE, json_encode([]));
+        $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE, json_encode([]));
+        $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_ADMIN_METHOD, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_CUSTOMER_METHOD, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::ADMIN_ACTIVE_METHOD_INLINE, NULL);
     }
 
 

@@ -254,19 +254,209 @@ $message=$send_otp_response['message'];
             $redirect_url=$redirect_url."&message=".$message."&showdiv=showdiv";
 
          }
+         } else if("resendotp"== $postValue['mopostoption']){
+            $this->TwoFAUtility->log_debug("MoCustomer : execute: Resend OTP");
+            $current_username = $this->TwoFAUtility->getSessionValue( 'mousername');
+            
+            // Get the current step and method from POST or GET parameters
+            $request = $this->request->getParams();
+            $step = isset($postValue['step']) ? $postValue['step'] : (isset($request['step']) ? $request['step'] : '');
+            $savestep = isset($postValue['savestep']) ? $postValue['savestep'] : (isset($request['savestep']) ? $request['savestep'] : '');
+            $active_method = isset($postValue['active_method']) ? $postValue['active_method'] : (isset($request['active_method']) ? $request['active_method'] : '');
+
+            if(empty($step)) {
+               $currentUrl = $this->url->getCurrentUrl();
+               if(strpos($currentUrl, 'step=') !== false) {
+                  parse_str(parse_url($currentUrl, PHP_URL_QUERY), $urlParams);
+                  if(isset($urlParams['step'])) {
+                     $step = $urlParams['step'];
+                  }
+                  if(empty($savestep) && isset($urlParams['savestep'])) {
+                     $savestep = $urlParams['savestep'];
+                  }
+               }
+            }
+            
+            // If step is still not found, determine it from user's active_method in database
+            if(empty($step)) {
+               $row = $this->TwoFAUtility->getMoTfaUserDetails('miniorange_tfa_users', $current_username);
+               if (is_array($row) && sizeof($row) > 0 && isset($row[0]['active_method'])) {
+                  $active_method = $row[0]['active_method'];
+                  // Map active_method to step
+                  if ($active_method === 'OOS') {
+                     $step = 'OOSMethodValidation';
+                     $savestep = 'OOS';
+                  } elseif ($active_method === 'OOE') {
+                     $step = 'OOEMethodValidation';
+                     $savestep = 'OOE';
+                  } elseif ($active_method === 'OOSE') {
+                     $step = 'OOSEMethodValidation';
+                     $savestep = 'OOSE';
+                  } elseif ($active_method === 'GoogleAuthenticator') {
+                     $step = 'GAMethodValidation';
+                     $savestep = 'GoogleAuthenticator';
+                  }
+               }
+            }
+            
+            // If active_method not set, determine from savestep or step
+            if(empty($active_method)) {
+               if(!empty($savestep)) {
+                  $active_method = $savestep;
+               } elseif($step === 'OOSMethodValidation') {
+                  $active_method = 'OOS';
+               } elseif($step === 'OOEMethodValidation') {
+                  $active_method = 'OOE';
+               } elseif($step === 'OOSEMethodValidation') {
+                  $active_method = 'OOSE';
+               } elseif($step === 'GAMethodValidation') {
+                  $active_method = 'GoogleAuthenticator';
+               }
+            }
+            
+            // Preserve phone and countrycode if they exist in the request
+            $phone = isset($postValue['phone']) ? $postValue['phone'] : (isset($request['phone']) ? $request['phone'] : '');
+            $countrycode = isset($postValue['countrycode']) ? $postValue['countrycode'] : (isset($request['countrycode']) ? $request['countrycode'] : '');
+            
+            // If phone/countrycode not in request, try to get from current URL
+            if(empty($phone) && strpos($this->url->getCurrentUrl(), 'phone=') !== false) {
+               parse_str(parse_url($this->url->getCurrentUrl(), PHP_URL_QUERY), $urlParams);
+               if(isset($urlParams['phone'])) {
+                  $phone = $urlParams['phone'];
+               }
+               if(empty($countrycode) && isset($urlParams['countrycode'])) {
+                  $countrycode = $urlParams['countrycode'];
+               }
+            }
+            
+            // If phone/countrycode still not found, get from database
+            if(empty($phone) || empty($countrycode)) {
+               $row = $this->TwoFAUtility->getMoTfaUserDetails('miniorange_tfa_users', $current_username);
+               if (is_array($row) && sizeof($row) > 0) {
+                  if(empty($phone) && isset($row[0]['phone'])) {
+                     $phone = $row[0]['phone'];
+                  }
+                  if(empty($countrycode) && isset($row[0]['countrycode'])) {
+                     $countrycode = $row[0]['countrycode'];
+                  }
+               }
+            }
+            
+            // Send OTP again
+            $send_otp_response = $this->miniOrangeInline->pageFourChallenge($this->TwoFAUtility);
+            $registeration_status=$send_otp_response['status'];
+            $message=$send_otp_response['message'];
+
+            if($registeration_status=='FAILED')
+            {   
+               $this->TwoFAUtility->log_debug("MoCustomer : execute: Resend OTP failed");
+               if($message=="The transaction limit has been exceeded.")
+               {
+                  $is_inside_registration=$this->TwoFAUtility->getSessionValue( 'mocreate_customer_register');
+                  if($is_inside_registration){
+                     $this->TwoFAUtility->log_debug("MoCustomer: Registration attempt failed due to exceeding transaction limit. Error given, user created, and logged in.");
+                     $this->twofaCustomerRegistration->createNewCustomerAtRegistration();
+                     $this->TwoFAUtility->setSessionValue( 'mocreate_customer_register', NULL );
+                  }
+                  $user = $this->getCustomerFromAttributes($this->TwoFAUtility->getSessionValue( 'mousername'));
+                  $this->customerSession->setCustomerAsLoggedIn($user);
+                  $this->TwoFAUtility->log_debug("MoCustomer :  ".$message);
+                  
+                  /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
+                  $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
+                  $resultRedirect->setPath('customer/account');
+                  $this->messageManager->addErrorMessage(__($message." Contact Your Administrator"));
+                  return $resultRedirect;
+               }
+               $this->responseFactory->create()->setRedirect($this->storeManager->getStore()->getBaseUrl().'customer/account/login')->sendResponse();
+               $this->messageManager->addErrorMessage(__($message." Contact Your Administrator"));
+               return;
+            } else {
+               $this->TwoFAUtility->log_debug("MoCustomer : execute: OTP resent successfully");
+
+               $resendMessage = "OTP has been resend successfully!";
+
+               $redirect_url = $this->url->getUrl('motwofa/mocustomer');
+
+               if($step) {
+                  $redirect_url .= "?mooption=invokeInline&step=" . urlencode($step);
+
+                  if($savestep) {
+                     $redirect_url .= "&savestep=" . urlencode($savestep);
+                  }
+
+                  if(isset($request['deleteSet']) || !empty($step)) {
+                     $redirect_url .= "&deleteSet=deleteSet";
+                  }
+
+                  if(isset($request['addPasscode'])) {
+                     $redirect_url .= "&addPasscode=" . urlencode($request['addPasscode']);
+                  } elseif($savestep === 'GoogleAuthenticator') {
+                     $redirect_url .= "&addPasscode=true";
+                  }
+
+                  if(isset($request['useremail'])) {
+                     $redirect_url .= "&useremail=" . urlencode($request['useremail']);
+                  } elseif($savestep === 'OOSE') {
+                     $redirect_url .= "&useremail=" . urlencode($current_username);
+                  }
+
+                  if($phone) {
+                     $redirect_url .= "&phone=" . urlencode($phone);
+                  }
+                  if($countrycode) {
+                     $redirect_url .= "&countrycode=" . urlencode($countrycode);
+                  }
+
+                  if($active_method) {
+                     $redirect_url .= "&active_method=" . urlencode($active_method);
+                  }
+                  
+                  $redirect_url .= "&message=" . urlencode($resendMessage) . "&showdiv=showdiv";
+               } else {
+                  $redirect_url .= "?mooption=invokeInline&step=OOSMethodValidation&savestep=OOS&deleteSet=deleteSet";
+                  if($phone) {
+                     $redirect_url .= "&phone=" . urlencode($phone);
+                  }
+                  if($countrycode) {
+                     $redirect_url .= "&countrycode=" . urlencode($countrycode);
+                  }
+                  if($active_method) {
+                     $redirect_url .= "&active_method=" . urlencode($active_method);
+                  }
+                  $redirect_url .= "&message=" . urlencode($resendMessage) . "&showdiv=showdiv";
+               }
+               
+               $redirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
+               $redirect->setUrl($redirect_url);
+               return $redirect;
+            }
          } else if("movalotp"== $postValue['mopostoption']){
             $this->TwoFAUtility->log_debug("MoCustomer : execute:movalopt: validate otp ");
-            $response = $this->miniOrangeInline->pageFourValidate($this->TwoFAUtility);
+            
+            // Check if this is a returning user (user exists in database)
+            $current_username = $this->TwoFAUtility->getSessionValue( 'mousername');
+            $row = $this->TwoFAUtility->getMoTfaUserDetails('miniorange_tfa_users', $current_username);
+            $isReturningUser = is_array($row) && sizeof($row) > 0;
+            
+            if($isReturningUser){
+                // For returning users, use TFAValidate which gets method from database
+                $this->TwoFAUtility->log_debug("MoCustomer : execute:movalopt: Returning user detected, using TFAValidate");
+                $response = $this->miniOrangeInline->TFAValidate($this->TwoFAUtility);
+            } else {
+                // For first-time registration, use pageFourValidate which uses session
+                $this->TwoFAUtility->log_debug("MoCustomer : execute:movalopt: First-time user, using pageFourValidate");
+                $response = $this->miniOrangeInline->pageFourValidate($this->TwoFAUtility);
+            }
 
             if($response){
                $this->TwoFAUtility->log_debug("MoCustomer : execute: Otp validation succesful");
-               $user = $this->getCustomerFromAttributes($this->TwoFAUtility->getSessionValue( 'mousername'));
+               $user = $this->getCustomerFromAttributes($current_username);
                $this->customerSession->setCustomerAsLoggedIn($user);
                $redirect_url = $this->url->getUrl('customer/account');
             }
             else {
                $this->TwoFAUtility->log_debug("MoCustomer : execute: Otp validation failure");
-               $current_username = $this->TwoFAUtility->getSessionValue( 'mousername');
                //throw new OtpValidateFailureException;
                   if(!isset($postValue['savestep']))
                   {
@@ -285,7 +475,7 @@ $message=$send_otp_response['message'];
                   }
                   if($postValue['savestep']=='GoogleAuthenticator')
                   {
-                     $redirect_url=$this->url->getCurrentUrl()."/?mooption=invokeInline&step=GAMethodValidation&error=error&deleteSet=deleteSet";
+                     $redirect_url=$this->url->getCurrentUrl()."/?mooption=invokeInline&step=GAMethodValidation&addPasscode=true&error=error&deleteSet=deleteSet";
 
                   }
                }

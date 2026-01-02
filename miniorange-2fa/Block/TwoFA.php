@@ -314,6 +314,14 @@ public function get_sms_email_detail(){
     {
         return $this->twofautility->AuthenticatorCustomerUrl();
     }
+
+    /**
+     * Get admin secret from session for Google Authenticator
+     */
+    public function getAdminSecret()
+    {
+        return $this->twofautility->getSessionValue(TwoFAConstants::ADMIN_SECRET);
+    }
 public function isGoogleAuthValidForAdmin()
 {    $count=$this->twofautility->getStoreConfig(TwoFAConstants::CUSTOMER_COUNT);
     $this->twofautility->log_debug("isGoogleAuthValidForAdmin : check google auth limit");
@@ -340,8 +348,16 @@ public function isGoogleAuthValidForAdmin()
        */
       public function getCurrentVersion()
       {
-          return TwoFAConstants::VERSION;
+          return $this->twofautility->getModuleVersion();
       }
+
+    /**
+     * This function gets the license plan level
+     */
+    public function getLicensePlan()
+    {
+        return TwoFAConstants::LICENSE_PLAN;
+    }
 
 
     /**
@@ -563,6 +579,24 @@ public function isGoogleAuthValidForAdmin()
     }
 
     /**
+     * Get all admin rules set by the admin on his site.
+     */
+    public function getExistingRules()
+    {
+        $configValue = $this->twofautility->getStoreConfig(TwoFAConstants::CURRENT_ADMIN_RULE);
+        return $configValue ? json_decode($configValue, true) : [];
+    }
+
+    /**
+     * Get all customer rules set by the admin on his site.
+     */
+    public function getCustomerExistingRules()
+    {
+        $configValue = $this->twofautility->getStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE);
+        return $configValue ? json_decode($configValue, true) : [];
+    }
+
+    /**
      * This function fetches the X509 cert saved by the admin for the IDP
      * in the plugin settings.
      */
@@ -640,6 +674,14 @@ public function isGoogleAuthValidForAdmin()
     public function getAdminLogoutUrl()
     {
         return $this->twofautility->getLogoutUrl();
+    }
+
+    /**
+     * Get Admin Page URL
+     */
+    public function getAdminPageUrl()
+    {
+        return $this->twofautility->getAdminPageUrl();
     }
 
     /**
@@ -839,8 +881,52 @@ public function isGoogleAuthValidForAdmin()
         return $this->twofautility->getStoreConfig(TwoFAConstants::NUMBER_OF_CUSTOMER_METHOD);
     }
 
+    /**
+     * Get customer TFA user details
+     */
+    public function getCustomerMoTfaUserDetails($tableName, $email)
+    {
+        return $this->twofautility->getMoTfaUserDetails($tableName, $email);
+    }
+
+    /**
+     * Get session value
+     */
+    public function getSessionValue($key)
+    {
+        return $this->twofautility->getSessionValue($key);
+    }
+
+    /**
+     * Check if customer is a returning user 
+     */
+    public function isReturningCustomerUser($activeMethod)
+    {
+        $email = $this->twofautility->getSessionValue('mousername');
+        if (!$email) {
+            return false;
+        }
+        
+        $row = $this->twofautility->getMoTfaUserDetails('miniorange_tfa_users', $email);
+        if (is_array($row) && sizeof($row) > 0) {
+            $userActiveMethod = isset($row[0]['active_method']) ? $row[0]['active_method'] : '';
+            return $userActiveMethod === $activeMethod;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get user details for customer reset
+     */
+    public function getUserDetailsforcustomerreset()
+    {
+        $current_username = $this->twofautility->getSessionValue('mousername');
+        $row = $this->twofautility->getMoTfaUserDetails('miniorange_tfa_users', $current_username);
+        return $row;
+    }
+
     public function get_admin_details(){
-        //$this->twofautility->get_admin_role_name();
         $current_user     = $this->getCurrentAdminUser();
         $current_email = $current_user->getEmail();
         $current_username= $current_user->getUsername();
@@ -952,6 +1038,14 @@ public function getTimeStamp(){
         return time();
     }
     return $this->twofautility->getStoreConfig(TwoFAConstants::TIME_STAMP);
+}
+
+/**
+ * Get all users with 2FA configured from the database
+ */
+public function getAllConfiguredUsers()
+{
+    return $this->twofautility->getAllConfiguredUsers();
 }
 
 }

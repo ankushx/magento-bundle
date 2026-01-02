@@ -27,6 +27,12 @@ class MiniOrangeUser{
                $customerKey = $customerKeys['customer_key'];
                $apiKey      = $customerKeys['apiKey'];
                $authCodes   = array('OOE'=>'EMAIL','OOS'=>'SMS','OOSE'=>'SMS AND EMAIL','KBA'=>'KBA');
+               
+               // If authType is empty, try to get it from database row first
+               if (empty($authType) && is_array($row) && sizeof($row) > 0 && isset($row[0]['active_method']) && !empty($row[0]['active_method'])) {
+                   $authType = $row[0]['active_method'];
+               }
+               
                $phone = isset( $row[0]['phone'] ) ? str_replace(" ","",$row[0]['phone']) : "";
                $email = isset( $row[0]['email'] ) ? str_replace(" ","",$row[0]['email']) : "";
                $countrycode = isset( $row[0]['countrycode'] ) ? str_replace(" ","",$row[0]['countrycode']) : "";
@@ -55,6 +61,10 @@ class MiniOrangeUser{
                }
                $phone = $countrycode.$phone;
 
+               // Initialize phone_set and email_set to avoid undefined variable errors
+               $phone_set = '';
+               $email_set = '';
+
                if($authType=='OOS'){
                 $phone_set= $phone;
                $email_set= '';
@@ -71,13 +81,30 @@ class MiniOrangeUser{
 
               if($isConfigure)
                {
+                   // Check if authType exists in authCodes array, otherwise use authType directly or default
+                   $authTypeValue = '';
+                   if (!empty($authType) && isset($authCodes[$authType])) {
+                       $authTypeValue = $authCodes[$authType];
+                   } elseif (!empty($authType)) {
+                       // If authType is set but not in authCodes, use it directly
+                       $authTypeValue = $authType;
+                   } else {
+                       // If authType is empty, try to determine from phone/email
+                       if (!empty($phone_set)) {
+                           $authTypeValue = 'SMS';
+                       } elseif (!empty($email_set)) {
+                           $authTypeValue = 'EMAIL';
+                       } else {
+                           $authTypeValue = 'SMS'; // Default fallback
+                       }
+                   }
 
                    $fields = array (
                        'customerKey' => $customerKey,
                        'username' => '',
                        'phone' => $phone_set,
                        'email' =>  $email_set,
-                       'authType' => $authCodes[$authType],
+                       'authType' => $authTypeValue,
                        'transactionName' => $TwoFAUtility->getTransactionName()
                    );
                }
@@ -157,23 +184,52 @@ class MiniOrangeUser{
         $row=$TwoFAUtility->getMoTfaUserDetails('miniorange_tfa_users',$username);
         $userdata= $this->userInfoData;
 
-        if($userdata!=NULL){
+        // Initialize transactionID
+        $transactionID = null;
+        
+        // Priority 1: Check session transaction ID first (especially important after resend OTP)
+        // This ensures we use the latest transaction ID when OTP is resent
+        $customer_inline= $TwoFAUtility->getSessionValue(TwoFAConstants::CUSTOMER_INLINE);
+        if($customer_inline){
+            $sessionTransactionID = $TwoFAUtility->getSessionValue(TwoFAConstants::CUSTOMER_TRANSACTIONID);
+            if(!empty($sessionTransactionID)){
+                $transactionID = $sessionTransactionID;
+                $TwoFAUtility->log_debug("MiniOrangeUser.php : execute: validate: Using session transaction ID (customer inline)");
+            }
+        }
+        
+        // Also check session transaction ID for returning users (even if CUSTOMER_INLINE is not set)
+        // This is important when resending OTP during second login
+        if(empty($transactionID) || $isConfiguring){
+            $sessionTransactionID = $TwoFAUtility->getSessionValue(TwoFAConstants::CUSTOMER_TRANSACTIONID);
+            if(!empty($sessionTransactionID)){
+                $transactionID = $sessionTransactionID;
+                $TwoFAUtility->log_debug("MiniOrangeUser.php : execute: validate: Using session transaction ID (isConfiguring or fallback)");
+            }
+        }
+        
+        // Priority 2: Check admin inline session
+        $admin_inline= $TwoFAUtility->getSessionValue(TwoFAConstants::ADMIN_IS_INLINE);
+        if($admin_inline){
+            $adminTransactionID = $TwoFAUtility->getSessionValue(TwoFAConstants::ADMIN_TRANSACTIONID);
+            if(!empty($adminTransactionID)){
+                $transactionID = $adminTransactionID;
+                $TwoFAUtility->log_debug("MiniOrangeUser.php : execute: validate: Using admin session transaction ID");
+            }
+        }
+        
+        // Priority 3: Check userdata
+        if(empty($transactionID) && $userdata!=NULL){
             $transactionID=$userdata['transactionId'];
             $user_name=$userdata['username'];
-         
-        }elseif(is_array( $row ) && sizeof( $row ) > 0 ){
-            $transactionID=$row[0]['transactionId'];
+            $TwoFAUtility->log_debug("MiniOrangeUser.php : execute: validate: Using userdata transaction ID");
         }
-        $customer_inline= $TwoFAUtility->getSessionValue(TwoFAConstants::CUSTOMER_INLINE);
-               if($customer_inline){
-                $transactionID=$TwoFAUtility->getSessionValue(TwoFAConstants::CUSTOMER_TRANSACTIONID);
-                
-               }
-             
-               $admin_inline= $TwoFAUtility->getSessionValue(TwoFAConstants::ADMIN_IS_INLINE);
-               if($admin_inline){
-                $transactionID=$TwoFAUtility->getSessionValue(TwoFAConstants::ADMIN_TRANSACTIONID);
-               }
+        
+        // Priority 4: Check database (fallback to old transaction ID)
+        if(empty($transactionID) && is_array( $row ) && sizeof( $row ) > 0 ){
+            $transactionID=$row[0]['transactionId'];
+            $TwoFAUtility->log_debug("MiniOrangeUser.php : execute: validate: Using database transaction ID (fallback)");
+        }
         $authCodes   = array('OOE'=>'EMAIL','OOS'=>'SMS','OOSE'=>'SMS AND EMAIL');
       
         if($isConfiguring){

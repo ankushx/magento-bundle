@@ -7,7 +7,7 @@
 
 		<!-- Adding a 2FA menu item in admin backend for access to other sub settings -->
         <add id="MiniOrange_TwoFA::TwoFA"
-        	 title="MiniOrange 2FA"
+        	 title="miniOrange 2FA"
         	 module="MiniOrange_TwoFA"
         	 sortOrder="55"
         	 resource="MiniOrange_TwoFA::TwoFA" />
@@ -32,7 +32,7 @@
         	Action is the controllerAction to be called when menu item is clicked.
     		-->
 		<add id="MiniOrange_TwoFA::signin_settings"
-        	 title="Two Factor Settings"
+        	 title="2FA Settings"
         	 module="MiniOrange_TwoFA"
         	 sortOrder="1"
         	 parent="MiniOrange_TwoFA::TwoFA"
@@ -44,6 +44,14 @@
         	Parent Menu Item is the miniOrange TwoFA menu item mentioned above.
         	Action is the controllerAction to be called when menu item is clicked.
     		-->
+		<add id="MiniOrange_TwoFA::advance_2fa"
+        	 title="2FA Advance Settings"
+        	 module="MiniOrange_TwoFA"
+        	 sortOrder="2"
+        	 parent="MiniOrange_TwoFA::TwoFA"
+        	 action="motwofa/advance2fa"
+        	 resource="MiniOrange_TwoFA::advance_2fa"/>
+			
 		<add id="MiniOrange_TwoFA::user_management"
         	 title="User management"
         	 module="MiniOrange_TwoFA"

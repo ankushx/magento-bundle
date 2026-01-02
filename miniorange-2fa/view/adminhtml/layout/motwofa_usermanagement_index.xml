@@ -3,6 +3,7 @@
 	  xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
         <css src="MiniOrange_TwoFA::css/adminSettings.css"/>
+        <css src="MiniOrange_TwoFA::css/all.min.css"/>
     </head>
     <body>
         <!-- 
@@ -14,9 +15,6 @@
             <block class="MiniOrange\TwoFA\Block\TwoFA" 
             	   name="miniorange.2fa.navbar" 
             	   template="navbar.phtml" />
-            <block class="MiniOrange\TwoFA\Block\TwoFA"
-            	   name="miniorange.2fa.admin.support"
-            	   template="support.phtml" />
             <block class="MiniOrange\TwoFA\Block\TwoFA" 
             	   name="miniorange.2fa.admin.usermanagement" 
             	   template="usermanagement.phtml" />

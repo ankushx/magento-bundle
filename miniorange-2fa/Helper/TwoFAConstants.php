@@ -13,7 +13,10 @@ class TwoFAConstants
     const MODULE_TWOFASETTINGS = "::twofa_settings";
     const MODULE_SIGNIN = "::signin_settings";
     const MODULE_ACCOUNT = "::account_settings";
+    const MODULE_ADVANCE_2FA = "::advance_2fa";
+    const MODULE_USER_MANAGEMENT = "::user_management";
     const MODULE_UPGRADE = "::upgrade";
+    const MODULE_TFA_SETTINGS_CONFIGURATION_TABLE = "::tfa_settings_configuration_table";
     const MODULE_TFA = "moduleTfa";
     const INVOKE_INLINE_REGISTERATION = "invokeInline";
     const ACTIVE_METHOD = "activeMethods";
@@ -109,9 +112,6 @@ class TwoFAConstants
     const DEFAULT_CUSTOMER_KEY = "16555";
     const DEFAULT_API_KEY = "fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq";
     const SAMLSP_KEY = "customerKey";
-    const VERSION = "v3.2.0";
-    //const DEFAULT_CUSTOMER_KEY     = "16672";
-    //const DEFAULT_API_KEY         = "F3fqktYvqo2oApdduYNMTkrYRrlPdnpW";
     const HOSTNAME = "https://login.xecurify.com";
     const PLUGIN_PORTAL_HOSTNAME  = "https://magento.shanekatear.in/plugin-portal";
 
@@ -163,6 +163,7 @@ class TwoFAConstants
     const LK_NO_OF_USERS = "lk_no_of_users";
     const LK_VERIFY = "lk_verify";
     const CUSTOMER_COUNT = "customer_count";
+    const LICENSE_PLAN = 0;
 
     //USER MANAGEMENT CONSTANTS.
     const USER_MANAGEMENT_USERNAME = "user_management_username";
@@ -207,6 +208,7 @@ class TwoFAConstants
     const DATA_ADDED = 'data_added';
     const TIME_STAMP = 'time_stamp';
 
-    const PLUGIN_VERSION = 'v3.2.1';
+    const CURRENT_ADMIN_RULE = 'current_admin_rules';
+    const CURRENT_CUSTOMER_RULE = 'current_customer_rules';
 
 }

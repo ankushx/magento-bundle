@@ -67,7 +67,6 @@ public static $uid;
 
 			$isCustomerRegistered = $this->twofautility->isCustomerRegistered();
 			if( !$isCustomerRegistered ) {
-				$this->messageManager->addErrorMessage(TwoFAMessages::NOT_REGISTERED);
 				$resultRedirect = $this->resultRedirectFactory->create();
 				$resultRedirect->setPath('motwofa/account/index');
 				return $resultRedirect;

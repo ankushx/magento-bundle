@@ -42,6 +42,7 @@ class TwoFAUtility extends Data
     private $userCollectionFactory;
     protected $productMetadata;
     protected $dateTime;
+    protected $moduleReader;
 
 
 
@@ -66,7 +67,8 @@ class TwoFAUtility extends Data
         \Psr\Log\LoggerInterface $logger,
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
-        dateTime $dateTime
+        dateTime $dateTime,
+        \Magento\Framework\Module\Dir\Reader $moduleReader
 
     ) {
                         $this->adminSession = $adminSession;
@@ -82,6 +84,7 @@ class TwoFAUtility extends Data
                         $this->userCollectionFactory = $userCollectionFactory;
                         $this->productMetadata = $productMetadata;
                         $this->dateTime=$dateTime;
+                        $this->moduleReader = $moduleReader;
 
                        parent::__construct(
                            $scopeConfig,
@@ -387,14 +390,37 @@ class TwoFAUtility extends Data
         if( is_null( $email ) ) {
             return false;
         } else {
-
-            $secret_already_set =  $this->getSessionValue('customer_inline_secret');
-                   if($secret_already_set==NULL){
-                       $secret =$this->generateRandomString();
-                        $this->setSessionValue('customer_inline_secret',$secret);
-                   }else{
-                    $secret=$secret_already_set;
-                   }
+            $secret = false;
+            
+            // First, check if user exists in database and has a secret (for returning users)
+            $row = $this->getMoTfaUserDetails('miniorange_tfa_users', $email);
+            if( is_array( $row ) && sizeof( $row ) > 0 ) {
+                $db_secret = isset( $row[0]['secret'] ) ? $row[0]['secret'] : false;
+                if($db_secret !== false && !empty(trim($db_secret))){
+                    $this->log_debug("AuthenticatorCustomerUrl: Using secret from database for returning user");
+                    $secret = $db_secret;
+                }
+            }
+            
+            // If no database secret found, check if we're in inline registration mode
+            if($secret === false || empty($secret)){
+                $customer_inline = $this->getSessionValue(TwoFAConstants::CUSTOMER_INLINE);
+                if($customer_inline){
+                    $this->log_debug("AuthenticatorCustomerUrl: Inline registration mode, using session secret");
+                    $secret_already_set = $this->getSessionValue('customer_inline_secret');
+                    if($secret_already_set == NULL){
+                        $secret = $this->generateRandomString();
+                        $this->setSessionValue('customer_inline_secret', $secret);
+                    } else {
+                        $secret = $secret_already_set;
+                    }
+                } else {
+                    // Not in inline mode and no database secret - this shouldn't happen for returning users
+                    $this->log_debug("AuthenticatorCustomerUrl: WARNING - No secret found in database and not in inline mode");
+                    $secret = $this->generateRandomString();
+                    $this->setSessionValue('customer_inline_secret', $secret);
+                }
+            }
 
             $issuer = $this->AuthenticatorIssuer();
             $url = "otpauth://totp/";
@@ -408,14 +434,20 @@ class TwoFAUtility extends Data
     }
 
     public function getAuthenticatorSecret( $current_username ){
-        $this->log_debug("Inside getAuthenticatorSecret. generating secret");
+        $this->log_debug("Inside getAuthenticatorSecret. generating secret for username: " . $current_username);
         $row = $this->getMoTfaUserDetails('miniorange_tfa_users',$current_username);
 
         if( is_array( $row ) && sizeof( $row ) > 0 ) {
-
-            return isset( $row[0]['secret'] ) ? $row[0]['secret'] : false;
+            $secret = isset( $row[0]['secret'] ) ? $row[0]['secret'] : false;
+            if($secret !== false && !empty(trim($secret))){
+                $this->log_debug("Inside getAuthenticatorSecret: Secret found in database");
+                return $secret;
+            } else {
+                $this->log_debug("Inside getAuthenticatorSecret: Secret is empty or null in database");
+                return false;
+            }
         } else {
-
+            $this->log_debug("Inside getAuthenticatorSecret: No user found in database");
             return false;
         }
     }
@@ -728,23 +760,43 @@ public function getCustomerKeys($isMiniorange=false){
     }
 
     //Update a column in any table
-    public function updateColumnInTable($table, $colName, $colValue, $idKey, $idValue){
+    public function updateColumnInTable($table, $colName, $colValue, $idKey, $idValue, $website_id = null){
        $this->log_debug("updateColumnInTable");
+       $whereConditions = [$idKey." = ?" => $idValue];
+       
+       // If website_id is provided, add it to where conditions
+       if ($website_id !== null) {
+           try {
+               $tableInfo = $this->resource->getConnection()->describeTable($table);
+               if (isset($tableInfo['website_id'])) {
+                   $whereConditions['website_id = ?'] = $website_id;
+               }
+           } catch (\Exception $e) {
+               $this->log_debug("website_id column doesn't exist: " . $e->getMessage());
+           }
+       }
+       
        $this->resource->getConnection()->update(
-       $table,  [ $colName => $colValue],
-        [$idKey." = ?" => $idValue]
-    );
+           $table,  [ $colName => $colValue],
+           $whereConditions
+       );
 }
 
     //fetch user details
     public function getMoTfaUserDetails($table,$username=false){
        // $this->log_debug("getMOTfaUserDetails");
         $query = $this->resource->getConnection()->select()
-            ->from($table,['username','active_method','configured_methods','email','phone','transactionId','secret','id','countrycode'])->where(
+            ->from($table,['username','active_method','configured_methods','email','phone','transactionId','secret','id','countrycode','disable_motfa'])->where(
             "username='".$username."'"
             );
         $fetchData = $this->resource->getConnection()->fetchAll($query);
         return $fetchData;
+    }
+
+    //fetch user details with website_id support
+    public function getAllMoTfaUserDetails($table, $username = false, $website_id = false)
+    {
+        return $this->getMoTfaUserDetails($table, $username);
     }
 
 
@@ -803,36 +855,64 @@ public function deleteRowInTable($table, $idKey, $idValue){
     }
 
     public function verifyGauthCode( $code, $current_username, $discrepancy = 3, $currentTimeSlice = null ) {
-        $this->log_debug("TwoFAUtlity: verifyGauthCode: execute");
+        $this->log_debug("TwoFAUtlity: verifyGauthCode: execute for username: " . $current_username);
 
-        $secret = $this->getAuthenticatorSecret( $current_username );
-        if($secret==false){
-            $secret=$this->getSessionValue(TwoFAConstants::PRE_SECRET);
+        // First, try to get secret from database (for returning users)
+        // This should be the primary source for users who have already registered
+        $secret = $this->getAuthenticatorSecret($current_username);
+        $this->log_debug("TwoFAUtlity: verifyGauthCode: Secret from database: " . ($secret !== false && !empty($secret) ? "Found (length: " . strlen($secret) . ")" : "Not found"));
+        
+        // If database doesn't have secret, try PRE_SECRET from session
+        if($secret === false || empty($secret)){
+            $this->log_debug("TwoFAUtlity: verifyGauthCode: Secret not in database, trying PRE_SECRET from session");
+            $secret = $this->getSessionValue(TwoFAConstants::PRE_SECRET);
         }
-        $customer_inline= $this->getSessionValue(TwoFAConstants::CUSTOMER_INLINE);
-               if($customer_inline){
-                $secret=$this->getSessionValue('customer_inline_secret');
-                $this->setSessionValue(TwoFAConstants::CUSTOMER_SECRET,$secret);
-               }
-               $admin_inline= $this->getSessionValue(TwoFAConstants::ADMIN_IS_INLINE);
-               if($admin_inline){
-                $secret=$this->getSessionValue(TwoFAConstants::ADMIN_SECRET);
-               }
+        
+        // Check if we're in inline registration mode (for first-time setup)
+        // Only use session secret if we're actually in inline mode AND database doesn't have secret
+        $customer_inline = $this->getSessionValue(TwoFAConstants::CUSTOMER_INLINE);
+        if($customer_inline && ($secret === false || empty($secret))){
+            $this->log_debug("TwoFAUtlity: verifyGauthCode: Customer inline mode detected, using session secret");
+            $secret = $this->getSessionValue('customer_inline_secret');
+            $this->setSessionValue(TwoFAConstants::CUSTOMER_SECRET, $secret);
+        }
+        
+        // Check if admin inline mode
+        $admin_inline = $this->getSessionValue(TwoFAConstants::ADMIN_IS_INLINE);
+        if($admin_inline && ($secret === false || empty($secret))){
+            $this->log_debug("TwoFAUtlity: verifyGauthCode: Admin inline mode detected, using session secret");
+            $secret = $this->getSessionValue(TwoFAConstants::ADMIN_SECRET);
+        }
+        
+        // Validate that we have a secret
+        if($secret === false || empty($secret)){
+            $this->log_debug("TwoFAUtlity: verifyGauthCode: ERROR - Secret is empty or false for username: " . $current_username);
+            $response = array("status" => 'FALSE');
+            return json_encode($response);
+        }
+        
+        $this->log_debug("TwoFAUtlity: verifyGauthCode: Secret found, length: " . strlen($secret));
+        
 		$response = array("status"=>'FALSE');
         if ($currentTimeSlice === null) {
             $currentTimeSlice = floor(time() / 30);
         }
 
         if (strlen($code) != 6) {
+            $this->log_debug("TwoFAUtlity: verifyGauthCode: Invalid OTP code length: " . strlen($code));
             return json_encode($response);
         }
+        
         for ($i = -$discrepancy; $i <= $discrepancy; ++$i) {
             $calculatedCode = $this->getCode($secret, $currentTimeSlice + $i);
             if ($this->timingSafeEquals($calculatedCode, $code)) {
+                $this->log_debug("TwoFAUtlity: verifyGauthCode: OTP validation SUCCESS");
                 $response['status']='SUCCESS';
                 return json_encode($response);
             }
         }
+        
+        $this->log_debug("TwoFAUtlity: verifyGauthCode: OTP validation FAILED - code does not match");
         return json_encode($response);
     }
 
@@ -1013,5 +1093,189 @@ return false;
         $dateTimeZone = new \DateTimeZone('Asia/Calcutta'); 
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
+    }
+
+    /**
+     * Get module version from composer.json
+     * @return string|null
+     */
+    public static function getModuleVersion()
+    {
+        try {
+            // Get the module directory 
+            $moduleDir = dirname(__DIR__);
+            $composerJsonPath = $moduleDir . '/composer.json';
+            
+            if (file_exists($composerJsonPath)) {
+                $composerJson = file_get_contents($composerJsonPath);
+                $composerData = json_decode($composerJson, true);
+                
+                if (isset($composerData['version'])) {
+                    return 'v' . $composerData['version'];
+                }
+            }
+        } catch (\Exception $e) {
+        }
+        return null;
+    }
+
+    /**
+     * Checks if 2FA is disabled for the user.
+     * Returns true if 2FA is disabled, false otherwise.
+     * 
+     * @param array $row User row data from miniorange_tfa_users table
+     */
+    public function isTwoFADisabled($row)
+    { 
+        if (isset($row[0]['disable_motfa'])) {
+            $disableValue = $row[0]['disable_motfa'];
+            if ($disableValue === '1' || $disableValue === 1 || $disableValue === true) {
+                $this->log_debug("2FA is disabled for this user (disable_motfa = 1)");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all users with 2FA configured from the database
+     * Helper method for Block class to access all configured users
+     */
+    public function getAllConfiguredUsers()
+    {
+        $connection = $this->resource->getConnection();
+        $tableName = $this->resource->getTableName('miniorange_tfa_users');
+
+        $query = "SELECT * FROM $tableName";
+        $result = $connection->fetchAll($query);
+        $processedUsers = [];
+
+        foreach ($result as $user) {
+            if (!isset($user['username']) || $user['username'] === null || $user['username'] === '') {
+                if (isset($user['email']) && $user['email'] !== null && $user['email'] !== '') {
+                    $user['username'] = $user['email'];
+                } else {
+                    continue;
+                }
+            }
+
+            if (!isset($user['email']) || $user['email'] === null || $user['email'] === '') {
+                $user['email'] = $user['username'];
+            }
+
+            $usernameToCheck = $user['username'];
+            $emailToCheck = $user['email'];
+
+            $adminTable = $this->resource->getTableName('admin_user');
+            $adminQueryByUsername = $connection->select()
+                ->from($adminTable, ['user_id'])
+                ->where("username = ?", $usernameToCheck);
+            $adminResult = $connection->fetchOne($adminQueryByUsername);
+            
+            // If not found by username, check by email
+            if (!$adminResult) {
+                $adminQueryByEmail = $connection->select()
+                    ->from($adminTable, ['user_id'])
+                    ->where("email = ?", $emailToCheck);
+                $adminResult = $connection->fetchOne($adminQueryByEmail);
+            }
+            
+            if ($adminResult) {
+                $originalWebsiteId = isset($user['website_id']) ? $user['website_id'] : null;
+                $user['website_id'] = -1;
+
+                if ($originalWebsiteId !== null && $originalWebsiteId !== '' && (int)$originalWebsiteId !== -1) {
+                    try {
+                        // Check if website_id column exists in table
+                        $tableInfo = $connection->describeTable($tableName);
+                        if (isset($tableInfo['website_id'])) {
+                            $connection->update(
+                                $tableName,
+                                ['website_id' => '-1'],
+                                ['username = ?' => $usernameToCheck]
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        $this->log_debug("website_id column doesn't exist yet: " . $e->getMessage());
+                    }
+                }
+            } else {
+                if (!isset($user['website_id']) || $user['website_id'] === null || $user['website_id'] === '') {
+                    // Check customer_entity table for website_id
+                    $customerTable = $this->resource->getTableName('customer_entity');
+                    $customerQuery = $connection->select()
+                        ->from($customerTable, ['website_id'])
+                        ->where("email = ?", $emailToCheck)
+                        ->limit(1);
+                    $customerWebsiteId = $connection->fetchOne($customerQuery);
+                    
+                    if ($customerWebsiteId !== false && $customerWebsiteId !== null) {
+                        $user['website_id'] = (int)$customerWebsiteId;
+                    } else {
+                        $user['website_id'] = 1;
+                    }
+                } else {
+                    $websiteIdInt = (int)$user['website_id'];
+                    if ($websiteIdInt === -1) {
+                        $recheckAdmin = $connection->fetchOne(
+                            $connection->select()
+                                ->from($adminTable, ['user_id'])
+                                ->where("username = ? OR email = ?", $usernameToCheck, $emailToCheck)
+                        );
+                        if (!$recheckAdmin) {
+                            $user['website_id'] = 1;
+                        } else {
+                            $user['website_id'] = -1;
+                        }
+                    } else {
+                        $user['website_id'] = $websiteIdInt;
+                    }
+                }
+            }
+
+            if (isset($user['disable_motfa'])) {
+                $disableValue = $user['disable_motfa'];
+                if (is_string($disableValue)) {
+                    $user['disable_2fa'] = ($disableValue === '1' || $disableValue === 'true' || $disableValue === 'True');
+                } else {
+                    $user['disable_2fa'] = (bool)$disableValue;
+                }
+            } elseif (isset($user['disable_2fa'])) {
+                $user['disable_2fa'] = (bool)$user['disable_2fa'];
+            } else {
+                $user['disable_2fa'] = false;
+            }
+
+            if (!isset($user['active_method'])) {
+                $user['active_method'] = '';
+            }
+            
+            // Ensure all required fields for template are present and properly sanitized
+            if (!isset($user['configured_methods'])) {
+                $user['configured_methods'] = '';
+            } else {
+                $user['configured_methods'] = (string)$user['configured_methods'];
+            }
+            if (!isset($user['phone'])) {
+                $user['phone'] = '';
+            } else {
+                $user['phone'] = (string)$user['phone'];
+            }
+            if (!isset($user['countrycode'])) {
+                $user['countrycode'] = '';
+            } else {
+                $user['countrycode'] = (string)$user['countrycode'];
+            }
+            
+            // Ensure username and email are strings
+            $user['username'] = (string)$user['username'];
+            $user['email'] = (string)$user['email'];
+            $user['active_method'] = (string)$user['active_method'];
+            
+            $processedUsers[] = $user;
+        }
+
+        return $processedUsers;
     }
 }

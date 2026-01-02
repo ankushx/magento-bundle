@@ -4,464 +4,719 @@
 -->
 <?php
     // initialize all values
-        $invokeInline = $block->invokeInline() ?'checked':'';
-        $moduleTfa = $block->TFAModule() ?'checked':'';
-        $formKey = $block->getFormKey();
-        $otp = $block->getOTP() ?'checked':'';
-        $email = $block->getEmail() ?'checked':'';
-        $oose  = $block->getOOSE() ?'checked':'';
-        $googleAuthenticator  = $block->getGA() ?'checked':'';
-        $premiumlink = $block->getExtensionPageUrl('upgrade');
-        $disabled= ($invokeInline=='checked')? '':'disabled';
-        $baseurl=$block->getBaseUrl();
-       $admin_name = $block->get_admin_append_name();
-      $api_key= $block->getApiKey();
-      $customer_key= $block->getCustomerKey();
-       $backdoor_login_url= $baseurl.$admin_name."/?&backdoor=". $customer_key;
-      $create_account_first = ($block->checkcustomerID()==NULL)? 'disabled':'';
-      $roles = $block->getAllRoles();
-      $admin_oos=$block->admin_getOOS()?'checked':'';
-      $admin_ooe=$block->admin_getOOE()?'checked':'';
-      $admin_oose=$block->admin_getOOSE()?'checked':'';
-      $admin_googleAuthenticator=$block->admin_getGoogleAuth()?'checked':'';
-      $pricing = $block->getExtensionPageUrl('upgrade');
-      $customer_skip_twofa = $block->do_customer_skip_twofa() ? 'checked':'';
-      $admin_skip_twofa = $block->do_admin_skip_twofa() ? 'checked':'';
-      $websites= $block->getWebsiteCollection();
-      
-      // opt verification registration
-
-      $enable_register_otp = $block->registration_checkbox() ;
-      $disabled_registration= ($enable_register_otp=='1')? '':'disabled';
-      $registration_oos=$block->registration_getOOS()?'checked':'';
-      $registration_ooe=$block->registration_getOOE()?'checked':'';
-      $registration_oose=$block->registration_getOOSE()?'checked':'';
-      $registration_googleAuthenticator=$block->registration_getGoogleAuth()?'checked':'';
-      
+    $formKey = $block->getFormKey();
+    $premiumlink = $block->getExtensionPageUrl('upgrade');
+    $create_account_first = ($block->checkcustomerID()==NULL)? 'disabled':'';
+    $params = $block->getRequest()->getParams();
+    
+    // Check if we should show the selection cards or the configuration
+    $showConfig = isset($params['type']) && ($params['type'] == 'customer' || $params['type'] == 'admin');
 ?>
 
-<div class="row">
-<div class="col-sm-8">
-   <div class="page" id="samlsettings">
-      <div class="mosp_table_layout">
-      <?php if($create_account_first=='disabled') {?>
-    <div class="error-msg">
-    Please register and verify your account before trying to configure your settings. Go the Account Section to complete your registration.
-      </div> <?php } ?>
-          <a class="btn" style="float:right" href="https://plugins.miniorange.com/magento-2fa-setup-guides" target="_blank"><bold>Setup Guide</bold></a>
-         <h3 style="margin-top:2.8%;color:#e85d22">SIGN IN OPTIONS FOR ADMIN</h3>
+<?php if (!$showConfig): ?>
+    <div class="p-6 twofa-container-width">
+        <div class="bg-white rounded-lg shadow p-6" style="width: 100%;">
+            <h1 class="text-3xl font-bold mb-6 text-black twofa-main-heading" style="padding-top:1rem">
+                Two-Factor Authentication Setup
+            </h1>
 
-         <hr>
-         <form id="enable_admin_tfa" method="post" action="">
-             <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-            <input type="hidden" name="option" value="enable_admin_tfa" >
+            <p class="text-gray-600 mb-8 twofa-sub-heading" style="padding-top:0.1rem">
+                Choose who you want to configure 2FA settings for:
+            </p>
 
-                     <label class="switch">
-                        <input type="checkbox" name="module_tfa" id="module_tfa"
-                            <?php print_r($moduleTfa); ?>  <?php print_r($create_account_first); ?>   value="true" onclick="document.getElementById('enable_admin_tfa').submit();" >  <span class="slider round"></span>  </label>&nbsp &nbsp <b>Enable Two Factor Authentication for Admin's.</b>
-                          <br>
-                        <br>
-                      <?php if($moduleTfa){ ?>
-                         <b>Note down this backdoor login url: </b> <br>
-                        <input class="backdoor" value="<?php print_r($backdoor_login_url); ?>" disabled />
-                        <br><br>
-                        <span> <i> ( This url creates a backdoor to login to your website using Magento credentials, incase you get locked out. ) </i> </span>
-                        <br><br>
-                        <?php } ?>
-                      </form>
-                        <form id="saveSingInSettings_admin" method="post" action="">
-             <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-            <input type="hidden" name="option" value="saveSingInSettings_admin" >
-                        <h4>ALLOW SPECIFIC 2FA METHODS TO CONFIGURE IN ADMIN INLINE REGISTRATION</h4>
-
-                    <select  onchange="adminrole_method_premium()" id="twofa_role" name="twofa_role" style="width:150px;" <?php if($moduleTfa==''){ ?> disabled <?php } ?> >
-
-                  <?php        foreach($roles as $role)
-                      {
-                          echo '<option id="mo2f_roles"
-                          name="'.$block->escapeHtmlAttr($role['label']).'" value="'.$block->escapeHtmlAttr($role['label']).'">'.
-                          $block->escapeHtmlAttr($role['label']).'</option>';
-                      }
-                  ?>
-                    </select>
-                    <div>
-                    <span id="premium_admin_role" style="display:none;width:50%;margin-left:20%;" class="kba_premium_option"> <span  style="color:red;"> *</span> <span style="color:black; font-weight:normal" > (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span></span></span>
+            <div class="grid">
+                <!-- Customer Configuration Card -->
+                <div class="selection-card" onclick="handleSelection('customer')">
+                    <div class="card-header">
+                        <div class="icon-title-group">
+                            <div class="icon-wrapper">
+                                <i class="fas fa-users card-icon"></i>
+                            </div>
+                            <h3 class="card-subtitle">Customer 2FA</h3>
+                        </div>
+                        <i class="fas fa-chevron-right chevron"></i>
                     </div>
-
-         <div style="margin-left:17px;margin-top:2%;">
-           <input type="checkbox" name="admin_oos" id="otp"
-           <?php print_r($admin_oos); ?>  value="true" title="Please Enable SIGN IN OPTION FOR ADMIN first." <?php if($moduleTfa==''){ ?> disabled <?php } ?> > OTP over SMS
-             <br>
-             <br>
-            <input type="checkbox" name="admin_ooe" id="otp"
-            <?php print_r($admin_ooe); ?> value="true" title="Please Enable SIGN IN OPTION FOR ADMIN first." <?php if($moduleTfa==''){ ?> disabled <?php } ?> > OTP over Email
-              <br>
-              <br>
-            <input type="checkbox" name="admin_oose" id="otp"
-            <?php print_r($admin_oose); ?> value="true" title="Please Enable SIGN IN OPTION FOR ADMIN first." <?php if($moduleTfa==''){ ?> disabled <?php } ?> > OTP over SMS and Email
-              <br>
-              <br>
-            <input type="checkbox" name="admin_googleauthenticator" id="otp"
-            <?php print_r($admin_googleAuthenticator); ?> value="true" title="Please Enable SIGN IN OPTION FOR ADMIN first." <?php if($moduleTfa==''){ ?> disabled <?php } ?> > Google Authenticator
-
-            </div>
-            <br>
-
-
-            <h4>Allow TwoFA opt-in for Admins</h4>
-
-<label class="switch">
-    <input type="checkbox" name="admin_skip_inline" id="admin_skip_inline" <?php print_r($admin_skip_twofa); ?> <?php print_r($create_account_first); ?> value="true">
-    <span class="slider round"></span>
-</label>&nbsp &nbsp Admins can skip the TwoFA windows. 
-<span id="avaliable_in_premium_website" style="width:50%;margin-left:20%;" class="kba_premium_option">
-    <span style="color:red;"> *</span> 
-    <span style="color:black; font-weight:normal">(Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
-</span>
-
-<br><br>
-<div class="admin_container">
-    <div class="form-group">
-        <label for="admin_option">Select option:</label>
-        <select id="admin_option" name="admin_option" class="form-control" onchange="toggleAdminOption()">
-            <option value="pick one">Pick one</option>
-            <option value="days">Days</option>
-            <option value="custom">Custom days</option>
-        </select>
-    </div>
-    <br>
-    <div id="admin_daysOption" style="display: none;">
-        <label for="admin_days">Select number of days:</label>
-        <select id="admin_daysSelect" name="admin_daysSelect" class="form-control">
-            <option value="1">1 Day</option>
-            <option value="2">2 Days</option>
-            <option value="7">7 Days</option>
-            <option value="14">14 Days</option>
-            <option value="30">30 Days</option>
-            <option value="60">60 Days</option>
-            <option value="90">90 Days</option>
-            <option value="permanent">Permanently</option>
-        </select>
-    </div>
-
-    <div id="admin_customOption" style="display: none;">
-        <label for="admin_custom">Number of days:</label>
-        <input type="number" id="admin_customDays" name="admin_customDays" class="form-control" placeholder="Enter number of days to skip">
-    </div>
-</div>
-            <br>
-                                    <input <?php print_r($create_account_first); ?> type="button" name="link_setup"
-                        onclick="document.getElementById('saveSingInSettings_admin').submit();"
-                        value="Save" style="width:150px"/>
-            <br><br>
-                    </form>
-            <form id="enable_customer_tfa" method="post" action="">
-             <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-
-
-
-            <h3 style="color:#e85d22">SIGN IN OPTIONS FOR CUSTOMER</h3>
-            <hr>
-            <h4>SELECT WEBSITE</h4>
-                    <input type="hidden" name="option" value="multisite_settings" >
-        <select id="select_wesbite" name="select_wesbite" style="width:150px;" <?php print_r($create_account_first); ?> >
-
-        <?php foreach($websites as $specific_website) {
-            if ($specific_website->getCode() == "base") {
-                // Main website, show as enabled and selected
-                echo '<option id="select_wesbite" name="'.$specific_website->getName().'" value="'.$specific_website->getId().'" selected>'.
-                    $specific_website->getName().'</option>';
-            } else {
-                // Other websites, disable them
-                echo '<option id="select_wesbite" name="'.$specific_website->getName().'" value="'.$specific_website->getId().'" disabled>'.
-                    $specific_website->getName().'</option>';
-            }
-        } ?>
-
-        </select>
-  
-                    <div>
-                    <span id="avaliable_in_premium_website" style="width:50%;margin-left:20%;" class="kba_premium_option"> <span  style="color:red;"> *</span> <span style="color:black; font-weight:normal" > (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span></span></span>
-                    </div> <br>
-
-            <input type="hidden" name="option" value="enable_customer_tfa" >
-
-          <label class="switch">
-                        <input type="checkbox" name="mo_invoke_inline" id="mo_invoke_inline"
-                            <?php print_r($invokeInline); ?>  <?php print_r($create_account_first); ?>   value="true" onclick="document.getElementById('enable_customer_tfa').submit();" >  <span class="slider round"></span>  </label>&nbsp &nbsp <b>Enable Two Factor Authentication for Customer's During Login.</b>
-          <br><br>
-
-              <?php if($disabled=='') { ?>
-
-                    </form>
-          <form id="saveSingInSettings_customer" method="post" action="">
-             <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-             <input type="hidden" name="option" value="saveSingInSettings_customer" >
-             <h4>ALLOW SPECIFIC 2FA METHODS TO CONFIGURE IN INLINE REGISTRATION</h4>
-             <div style="margin-left:17px;margin-top:2%;">
-               <input type="checkbox" name="otp" id="otp"
-               <?php print_r($otp); ?>  value="true" <?php print_r($disabled); ?> <?php print_r($create_account_first); ?> title="Please Enable SIGN IN OPTION FOR ADMIN first."> OTP over SMS
-                 <br>
-                 <br>
-                <input type="checkbox" name="email" id="otp"
-                <?php print_r($email); ?>  value="true" <?php print_r($disabled); ?> <?php print_r($create_account_first); ?> title="Please Enable SIGN IN OPTION FOR ADMIN first."> OTP over Email
-                  <br>
-                  <br>
-                <input type="checkbox" name="oose" id="otp"
-                <?php print_r($oose); ?>  value="true" <?php print_r($disabled); ?> <?php print_r($create_account_first); ?> title="Please Enable SIGN IN OPTION FOR ADMIN first."> OTP over SMS and Email
-                  <br>
-                  <br>
-                <input type="checkbox" name="googleauthenticator" id="otp"
-                <?php print_r($googleAuthenticator); ?>  value="true" <?php print_r($disabled); ?> <?php print_r($create_account_first); ?> title="Please Enable SIGN IN OPTION FOR ADMIN first."> Google Authenticator
-
+                    <br>
+                    <p class="card-text">
+                        Configure two-factor authentication settings for your customers across different websites and groups.
+                    </p>
                 </div>
 
-<br><br>
-<h4>SECURITY QUESTION (KBA) AS BACK UP 2FA</h4>
-
-                        <label class="switch">
-                        <input type="checkbox" name="kba_method" id="kba_method"
-                         <?php print_r($create_account_first); ?>   value="true" onchange="kba_div()" >  <span class="slider round"></span>  </label>&nbsp &nbsp Enable KBA Method.
-                        <span id="avaliable_in_premium_kba" style="display:none;width:50%" class="kba_premium_option"> <span  style="color:red;"> *</span> <span style="color:black; font-weight:normal" > (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span></span></span>
-                        <br><br>
-                            <div class="hide_show_kba_div" id="hide_show_kba_div" style="display:none" >
-                            <div>
-                              Enter question set 1:
-                              <input  id="kba_question_set1"  value=""  <?php print_r($create_account_first); ?> placeholder="Write your questions here , seperated by semicolon (;) " style="width:80%" disabled></input>
-                          </div>
-                          <br>
-                          <div>
-                              Enter question set 2:
-                              <input id="kba_question_set2"  value=""  <?php print_r($create_account_first); ?> placeholder="Write your questions here , seperated by semicolon (;) " style="width:80%" disabled></input>
-                          </div>
-                          <br>
-                          </div>
-
-<h4>TWO FACTOR AUTHENTICATION DURING REGISTRATION (Registration + Login both).</h4>
-
-<label class="switch">
-                        <input type="checkbox" name="customer_registration_inline" id="customer_registration_inline"
-                       <?php print_r($create_account_first); ?>   value="true"  onchange="customerinline_div()" disabled>  <span class="slider round"></span>  </label>&nbsp &nbsp Enable Two Factor Authentication During Customer Registration.
-                       <br>
-                       <span id="avaliable_in_premium_inline" style="width:50%;margin-left:55%;" class="kba_premium_option"> <span  style="color:red;"> *</span> <span style="color:black; font-weight:normal" > (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span></span></span>
-
-                          <br>
-
-<h4>Allow TwoFA opt-in for Customers</h4>
-
-<label class="switch">
-    <input type="checkbox" name="customer_skip_inline" id="customer_skip_inline" <?php print_r($create_account_first); ?> value="true">
-    <span class="slider round"></span>
-</label>&nbsp &nbsp Customers can skip the TwoFA windows. 
-<span id="avaliable_in_premium_website" style="width:50%;margin-left:20%;" class="kba_premium_option">
-    <span style="color:red;"> *</span> 
-    <span style="color:black; font-weight:normal">(Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
-</span>
-
-<br><br>
-<div class="customer_container">
-    <div class="form-group">
-        <label for="customer_option">Select option:</label>
-        <select id="customer_option" name="customer_option" class="form-control" onchange="toggleCustomerOption()">
-            <option value="pick one">Pick one</option>
-            <option value="days">Days</option>
-            <option value="custom">Custom days</option>
-        </select>
-    </div>
-    <br>
-    <div id="customer_daysOption" style="display: none;">
-        <label for="customer_days">Select number of days:</label>
-        <select id="customer_daysSelect" name="customer_daysSelect" class="form-control">
-            <option value="1">1 Day</option>
-            <option value="2">2 Days</option>
-            <option value="7">7 Days</option>
-            <option value="14">14 Days</option>
-            <option value="30">30 Days</option>
-            <option value="60">60 Days</option>
-            <option value="90">90 Days</option>
-            <option value="permanent">Permanently</option>
-        </select>
-    </div>
-
-    <div id="customer_customOption" style="display: none;">
-        <label for="customer_custom">Number of days:</label>
-        <input type="number" id="customer_customDays" name="customer_customDays" class="form-control" placeholder="Enter number of days to skip">
-    </div>
-</div>
-<br>
-<h4>Customize UI of Login Pop up's</h4>
-                          <label class="switch">
-                        <input type="checkbox" name="popup_ui" id="popup_ui"
-                         <?php print_r($create_account_first); ?>   value="true" onchange="popup_ui_div()" >  <span class="slider round"></span>  </label>&nbsp &nbsp Customize UI of Login Pop up's.
-<br>
-<span id="avaliable_in_premium_popup" style="display:none;width:50%;margin-left:33%;" class="kba_premium_option"> <span  style="color:red;"> *</span> <span style="color:black; font-weight:normal" > (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span></span></span>
-<div id="popup_ui_div" style="display:none">
-<table >
-  <tr>
-    <td>Background color: </td>
-    <td><input type="text" name="popup_ui_background_colour" id="popup_ui_background_colour" value="" <?php print_r($disabled); ?> disabled>
-  </td>
-  </tr>
-  <tr>
-    <td>Background image URL/Path:</td>
-    <td>   <input type="text" name="popup_ui_background_image" id="popup_ui_background_image" value="" <?php print_r($disabled); ?> disabled></td>
-  </tr>
-  <tr>
-    <td>Button color:</td>
- <td>  <input type="text" name="popup_ui_button_colour" id="popup_ui_button_colour" value="" <?php print_r($disabled); ?> disabled>
-  </td>
-  </tr>
-<tr>
-  <td>Popup card background color:</td>
-  <td> <input type="text" name="popup_ui_card_color" id="popup_ui_card_color" value="" <?php print_r($disabled); ?> disabled>
- </td>
-  </tr>
-  <tr>
-    <td>Header Text Color:</td>
-    <td>  <input type="text" name="popup_ui_header_colour" id="popup_ui_header_colour" value="" <?php print_r($disabled); ?> disabled>
- </td>
-  </tr>
-
-  <tr>
-    <td>Input Text Background color:</td>
-    <td>
-   <input type="text" name="popup_ui_input_background_color" id="popup_ui_input_background_color" value="" <?php print_r($disabled); ?> disabled>
-    </td>
-  </tr>
-
-  <tr>
-    <td>Input Text color:</td>
-    <td>  <input type="text" name="popup_ui_input_text_color" id="popup_ui_input_text_color" value="" <?php print_r($disabled); ?> disabled>
- </td>
-  </tr>
-
-  <tr>
-    <td>Button Text color:</td>
-    <td>  <input type="text" name="popup_ui_button_text_color" id="popup_ui_button_text_color" value="" <?php print_r($disabled); ?> disabled></td>
-  </tr>
-
-  <tr>
-    <td>Success Message Text color:</td>
-    <td>  <input type="text" name="popup_ui_success_text_color" id="popup_ui_success_text_color" value="" <?php print_r($disabled); ?> disabled>
-  </td>
-  </tr>
-
-  <tr>
-    <td>Error Message Text color:</td>
-    <td>   <input type="text" name="popup_ui_error_text_color" id="popup_ui_error_text_color" value="" <?php print_r($disabled); ?> disabled>
-  </td>
-  </tr>
-
-  </table>
-  </div>
-<br><br>
-          <input <?php print_r($disabled); ?> <?php print_r($create_account_first); ?> type="button" name="link_setup"
-            onclick="document.getElementById('saveSingInSettings_customer').submit();"
-            value="Save" style="width:150px"/>
-
-            <?php } ?>
-          </form>
-
-         <br>
- <hr>
-
- 
- 
-        <!-- Registration OTP -->
-        <h3 style="margin-top:2.8%;color:#e85d22">OTP Verification on Registration Form</h3>
-        <form id="enable_register_otp" method="post" action="">
-                        <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-            <input type="hidden" name="option" value="enable_register_otp" >
-            <label class="switch">
-                <input type="checkbox" name="module_register_otp" id="module_register_otp" <?= $enable_register_otp ? 'checked' : ''; ?> <?= $block->escapeHtmlAttr($create_account_first); ?> value="true" onclick="document.getElementById('enable_register_otp').submit();" />
-                <span class="slider round"></span>
-            </label>&nbsp;&nbsp;<b>Enable OTP for registration.</b>
-            <br><br>
-        </form>
-
-        <?php if($disabled_registration=='') { ?>
-        <form id="saveSingInSettings_register" method="post" action="">
-            <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
-            <input type="hidden" name="option" value="saveSingInSettings_register" >
-            <div style="margin-left:17px; margin-top:2%;">
-                <input type="checkbox" name="register_otp_phone" id="register_otp_phone" <?= $block->escapeHtmlAttr($registration_oos); ?> value="true" title="Please Enable OTP FOR REGISTRATION first."  /> OTP over SMS
-                <br><br>
-                <input type="checkbox" name="register_otp_email" id="register_otp_email" <?= $block->escapeHtmlAttr($registration_ooe); ?> value="true" title="Please Enable OTP FOR REGISTRATION first."  /> OTP over Email
-                <br><br>
-                <input type="checkbox" name="register_otp_email_and_sms" id="register_otp_email_and_sms" <?= $block->escapeHtmlAttr($registration_oose); ?> value="true" title="Please Enable OTP FOR REGISTRATION first."  /> OTP over Email and SMS
-                <br><br>
-                <input type="checkbox" name="register_otp_ga" id="register_otp_ga" <?= $block->escapeHtmlAttr($registration_googleAuthenticator); ?> value="true" title="Please Enable OTP FOR REGISTRATION first." /> Google Authenticator
+                <!-- Admin Configuration Card -->
+                <div class="selection-card" onclick="handleSelection('admin')">
+                    <div class="card-header">
+                        <div class="icon-title-group">
+                            <div class="icon-wrapper">
+                                <i class="fas fa-shield-alt card-icon"></i>
+                            </div>
+                            <h3 class="card-subtitle">Admin 2FA</h3>
+                        </div>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <br>
+                    <p class="card-text">
+                        Set up two-factor authentication rules and policies for administrative users and staff.
+                    </p>
+                </div>
             </div>
-            <br><br>
-            <input type="submit" class="btn btn-primary" value="Save Settings" >
-        </form>
-        <?php } ?>
 
-      </div>
+            <div class="guide-section bg-gray-100 rounded-lg p-8 mt-8">
+                <h4 class="guide-title text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
+                    <i class="fas fa-book"></i> Quick Guide
+                </h4>
+                <ul class="guide-list pl-6 text-gray-700 text-lg space-y-3">
+                    <li class="">
+                        <span>
+                            Select either <span class="font-medium text-black">Customer</span> or
+                            <span class="font-medium text-black">Admin 2FA</span> configuration
+                        </span>
+                    </li>
+                    <li class="">
+                        <span>Configure authentication methods and rules on the next screen</span>
+                    </li>
+                    <li class="">
+                        <span>Review and manage all configurations in the central dashboard</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <script>
-    function toggleCustomerOption() {
-        var option = document.getElementById("customer_option").value;
-        var daysOption = document.getElementById("customer_daysOption");
-        var customOption = document.getElementById("customer_customOption");
-
-        if (option === "days") {
-            daysOption.style.display = "block";
-            customOption.style.display = "none";
-        } else if (option === "custom") {
-            daysOption.style.display = "none";
-            customOption.style.display = "block";
-        } else {
-            daysOption.style.display = "none";
-            customOption.style.display = "none";
+        function handleSelection(type) {
+            // Redirect to show configuration with type parameter
+                window.location.href = window.location.pathname + '?type=' + type;
+        }
+        
+        function goBackToCards() {
+            // Remove type parameter to show card selection
+            const url = new URL(window.location.href);
+            url.searchParams.delete('type');
+            window.location.href = url.toString();
+            return false; 
+        }
+    </script>
+<?php else: ?>
+    <?php
+    $invokeInline = $block->invokeInline() ?'checked':'';
+    $moduleTfa = $block->TFAModule() ?'checked':'';
+    $otp = $block->getOTP() ?'checked':'';
+    $email = $block->getEmail() ?'checked':'';
+    $oose  = $block->getOOSE() ?'checked':'';
+    $googleAuthenticator  = $block->getGA() ?'checked':'';
+    $disabled= ($invokeInline=='checked')? '':'disabled';
+    $baseurl=$block->getBaseUrl();
+    $admin_name = $block->get_admin_append_name();
+    $api_key= $block->getApiKey();
+    $customer_key= $block->getCustomerKey();
+    $backdoor_login_url= $baseurl.$admin_name."/?&backdoor=". $customer_key;
+    $roles = $block->getAllRoles();
+    $admin_oos=$block->admin_getOOS()?'checked':'';
+    $admin_ooe=$block->admin_getOOE()?'checked':'';
+    $admin_oose=$block->admin_getOOSE()?'checked':'';
+    $admin_googleAuthenticator=$block->admin_getGoogleAuth()?'checked':'';
+    $pricing = $block->getExtensionPageUrl('upgrade');
+    $customer_skip_twofa = $block->do_customer_skip_twofa() ? 'checked':'';
+    $admin_skip_twofa = $block->do_admin_skip_twofa() ? 'checked':'';
+    $websites= $block->getWebsiteCollection();
+    // Get base website name for display (used in customer section)
+    $baseWebsiteName = 'base';
+    foreach($websites as $specific_website) {
+        if ($specific_website->getCode() == "base") {
+            $baseWebsiteName = $specific_website->getName();
+            break;
         }
     }
+    $enable_register_otp = $block->registration_checkbox() ;
+    $disabled_registration= ($enable_register_otp=='1')? '':'disabled';
+    $registration_oos=$block->registration_getOOS()?'checked':'';
+    $registration_ooe=$block->registration_getOOE()?'checked':'';
+    $registration_oose=$block->registration_getOOSE()?'checked':'';
+    $registration_googleAuthenticator=$block->registration_getGoogleAuth()?'checked':'';
+    ?>
+    <?php if($params['type'] == 'admin'): ?>
+                <?php
+                $existingRules = $block->getExistingRules() ?: [];
+                ?>
+                <div class="p-6 twofa-container-width" style="max-width: 100%;overflow-x: hidden;">
+                    <div class="bg-white rounded-lg shadow p-6" style="width: 100%;">
+                        <h1 class="text-3xl font-bold mb-6 text-black twofa-main-heading" style="padding-top:1rem">Two-Factor Authentication</h1>
+                        <p class="text-gray-600 mb-8 twofa-section-heading" style="padding-top:0.1rem">Configure 2FA for Admins based on their roles preferences.</p>
+
+                        <!-- Rule Creation -->
+                        <div class="mb-12 mb-8 p-4 border rounded-lg bg-gray-50 twofa-section-container">
+                            <h3 class="text-lg font-bold mb-4 twofa-section-heading">Create New Rule</h3>
+
+                        <form id="saveSingInSettings_admin" method="post" action="">
+                            <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
+                            <input type="hidden" name="option" value="saveSingInSettings_admin" >
+                                
+                                <!-- Role Dropdown -->
+                                <div class="relative">
+                                    <div class="twofa-label-container">
+                                        <label for="twofa_role" class="twofa-form-label">
+                                            Select a Role
+                                        </label>
+                                        <span id="avaliable_in_premium_role" class="kba_premium_option" style="position: static !important; display: inline-block !important; white-space: nowrap !important; margin-right: 0 !important; margin-left: 0 !important; margin-top: 0.2rem !important; width: auto !important; vertical-align: baseline;">
+                                            <span style="color:red;"> *</span>
+                                            <span style="color:black; font-weight:normal"> (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
+                                        </span>
+                                    </div>
+                                    <div class="relative w-full">
+                                        <select id="twofa_role" name="twofa_role" class="twofa-form-select twofa-form-select-disabled" <?php print_r($create_account_first); ?> disabled>
+                                <option value="Administrators" selected>Administrators</option>
+                            </select>
+                                        <div class="twofa-icon-overlay">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br>
+
+                            <div class="mt-8 p-6 bg-white-50 shadow rounded-lg" style="border-left: 4px solid #facc15;">
+                                <h3 class="font-semibold mb-4" style="color:#eb5202; font-size:1.5rem;">
+                                    Note down this backdoor login URL:
+                                </h3>
+                                <div class="flex items-center relative">
+                                    <span id="copyMessage_admin"
+                                          class="text-green-600 mb-2 hidden absolute top-[-30px] left-0 right-0 text-center"
+                                          style="left: 90%;top:-90%;background-color:#eb5202;color:white;border-radius:0.5rem;padding:0.3rem;font-size:1.4rem">Copied!</span>
+                                    <input
+                                        class="backdoor w-full p-3 text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-yellow-300 cursor-not-allowed"
+                                        value="<?php echo $this->escapeHtmlAttr($backdoor_login_url); ?>"
+                                        style="width:92%"
+                                        disabled
+                                    >
+                                    <button type="button" <?php print_r($create_account_first); ?>
+                                        class="ml-4 px-4 py-2 text-white font-semibold rounded-lg hover:bg-gray-50 focus:ring focus:ring-yellow-300 flex items-center"
+                                        onclick="copyBackdoorUrlAdmin()"
+                                        style="width: 4rem; height: 4rem; display: flex; justify-content: center; background-color:#eb5202; border:none"
+                                    >
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                </div>
+                                <p class="text-gray-600 mt-4" style="font-size:1.3rem">
+                                    This URL allows you to access the admin panel using Magento credentials in case of lockout.
+                                </p>
+                            </div>
+
+                                <!-- Available Authentication Methods -->
+                                <h4 class="text-lg font-medium mb-4" style="font-size:1.5rem;padding-top: 1rem;">Available Authentication Methods</h4>
+                                <div style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 1rem;">
+                                    <div class="flex items-center justify-between border rounded-lg twofa-method-card" 
+                                         onclick="toggleAdminCheckbox(this, 'admin_oos')">
+                                        <div class="twofa-method-content">
+                                            <i class="fas fa-sms twofa-method-icon"></i>
+                                            <span class="twofa-method-text">OTP over SMS</span>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="admin_oos" id="admin_oos"
+                                                <?php print_r($admin_oos); ?> value="true" <?php print_r($create_account_first); ?> class="peer sr-only">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="flex items-center justify-between border rounded-lg twofa-method-card" 
+                                         onclick="toggleAdminCheckbox(this, 'admin_ooe')">
+                                        <div class="twofa-method-content">
+                                            <i class="fas fa-envelope twofa-method-icon"></i>
+                                            <span class="twofa-method-text">OTP over Email</span>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="admin_ooe" id="admin_ooe"
+                                                <?php print_r($admin_ooe); ?> value="true" <?php print_r($create_account_first); ?> class="peer sr-only">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="flex items-center justify-between border rounded-lg twofa-method-card" 
+                                         onclick="toggleAdminCheckbox(this, 'admin_oose')">
+                                        <div class="twofa-method-content">
+                                            <i class="fas fa-bell twofa-method-icon"></i>
+                                            <span class="twofa-method-text">OTP over SMS and Email</span>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="admin_oose" id="admin_oose"
+                                                <?php print_r($admin_oose); ?> value="true" <?php print_r($create_account_first); ?> class="peer sr-only">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="flex items-center justify-between border rounded-lg twofa-method-card" 
+                                         onclick="toggleAdminCheckbox(this, 'admin_googleauthenticator')">
+                                        <div class="twofa-method-content">
+                                            <i class="fas fa-mobile-alt twofa-method-icon"></i>
+                                            <span class="twofa-method-text">Google Authenticator</span>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="admin_googleauthenticator" id="admin_googleauthenticator"
+                                                <?php print_r($admin_googleAuthenticator); ?> value="true" <?php print_r($create_account_first); ?> class="peer sr-only">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <input type="submit" value="<?= !empty($existingRules) ? 'Update Rule' : 'Add Rule' ?>" id="addRuleBtn" <?php print_r($create_account_first); ?>
+                                       class="mt-8 px-6 py-4 text-white font-semibold rounded-lg transition-colors duration-200" style="background-color:#eb5202;">
+                            </form>
+                            
+                            <script>
+                            // Free version: Only allow one rule - disable Add Rule button if rule exists
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const addRuleBtn = document.getElementById('addRuleBtn');
+                                const existingRules = <?= json_encode($existingRules) ?: '[]'; ?>;
+                                
+                                if (existingRules && existingRules.length > 0 && addRuleBtn) {
+                                    // Change button text to "Update Rule" if rule exists
+                                    addRuleBtn.value = 'Update Rule';
+                                }
+                            });
+                            </script>
+                                </div>
+
+                        <!-- Existing Rules -->
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 twofa-rules-heading">Existing Rules</h3>
+                        <div id="existingRules" class="space-y-6"></div>
+                            </div>
+                </div>
+    <?php endif; ?>
     
-    function toggleAdminOption() {
-        var option = document.getElementById("admin_option").value;
-        var daysOption = document.getElementById("admin_daysOption");
-        var customOption = document.getElementById("admin_customOption");
-
-        if (option === "days") {
-            daysOption.style.display = "block";
-            customOption.style.display = "none";
-        } else if (option === "custom") {
-            daysOption.style.display = "none";
-            customOption.style.display = "block";
-        } else {
-            daysOption.style.display = "none";
-            customOption.style.display = "none";
+    <?php if($params['type'] == 'customer'): ?>
+        <?php
+        // Get customer groups for dropdown
+        $customer_groups = $block->getAllGroups();
+        $existingRules = $block->getCustomerExistingRules() ?: [];
+        
+        // Check if we're editing an existing rule (site and group parameters)
+        $siteParam = isset($params['site']) ? $params['site'] : null;
+        $groupParam = isset($params['group']) ? $params['group'] : null;
+        
+        // Initialize selected methods array
+        $selectedMethods = [];
+        
+        // If editing a specific rule (site and group parameters provided)
+        if ($siteParam && $groupParam) {
+            foreach ($existingRules as $rule) {
+                // Normalize site comparison - handle both 'base' and website name
+                $ruleSite = isset($rule['site']) ? $rule['site'] : '';
+                $normalizedRuleSite = ($ruleSite === 'base' || $ruleSite === $baseWebsiteName) ? 'base' : $ruleSite;
+                $normalizedParamSite = ($siteParam === 'base' || $siteParam === $baseWebsiteName) ? 'base' : $siteParam;
+                
+                // Check if the current rule's site and group match the parameters
+                if (isset($rule['group']) && 
+                    $normalizedRuleSite === $normalizedParamSite && 
+                    $rule['group'] === $groupParam) {
+                    // Extract methods from the matching rule
+                    if (isset($rule['methods']) && is_array($rule['methods'])) {
+                        foreach ($rule['methods'] as $method) {
+                            // Add method key to selected methods array
+                            if (isset($method['method'])) {
+                                $selectedMethods[] = $method['method'];
+                            }
+                        }
+                    }
+                    break; // Found matching rule, no need to continue
+                }
+            }
+        } elseif (!empty($existingRules)) {
+            // If no specific rule is being edited but rules exist, populate from the first rule
+            // (In free version, there's only one rule allowed)
+            $firstRule = $existingRules[0];
+            if (isset($firstRule['methods']) && is_array($firstRule['methods'])) {
+                foreach ($firstRule['methods'] as $method) {
+                    if (isset($method['method'])) {
+                        $selectedMethods[] = $method['method'];
+                    }
+                }
+            }
         }
-    }
+        
+        // Initialize authMethods with all methods set to not selected
+        $authMethods = [
+            'OOS' => ['label' => 'OTP over SMS', 'icon' => 'fas fa-sms', 'selected' => false],
+            'OOE' => ['label' => 'OTP over Email', 'icon' => 'fas fa-envelope', 'selected' => false],
+            'OOSE' => ['label' => 'Email + SMS', 'icon' => 'fas fa-bell', 'selected' => false],
+            'GoogleAuthenticator' => ['label' => 'Google Authenticator', 'icon' => 'fas fa-mobile-alt', 'selected' => false]
+        ];
+        
+        // If we have selected methods (from editing or existing rule), mark them as selected
+        if (!empty($selectedMethods)) {
+            foreach ($selectedMethods as $methodKey) {
+                if (isset($authMethods[$methodKey])) {
+                    $authMethods[$methodKey]['selected'] = true;
+                }
+            }
+        } else {
+            // If no existing rule, use global settings (for backward compatibility)
+            $authMethods['OOS']['selected'] = $otp == 'checked';
+            $authMethods['OOE']['selected'] = $email == 'checked';
+            $authMethods['OOSE']['selected'] = $oose == 'checked';
+            $authMethods['GoogleAuthenticator']['selected'] = $googleAuthenticator == 'checked';
+        }
+        ?>
+        <div class="p-6 twofa-container-width">
+            <div class="bg-white rounded-lg shadow p-6" style="width: 100%;">
+                <h1 class="text-3xl font-bold mb-6 text-black twofa-main-heading">Two-Factor Authentication</h1>
+                <p class="text-gray-600 mb-8 twofa-sub-heading" style="padding-top:0.1rem">Configure 2FA for customers based on their site and group preferences.</p>
 
-    window.onload = function () {
-        var customerCheckbox = document.getElementById("customer_skip_inline");
-        var customerContainer = document.querySelector(".customer_container");
+                                <div class="mb-12 mb-8 p-4 border rounded-lg bg-gray-50 twofa-section-container">
+                                    <!-- Website Dropdown -->
+                                        <div style="position: relative;">
+                                            <div class="twofa-label-container">
+                                                <label for="select_website" class="twofa-form-label">
+                                                Select a Website
+                                            </label>
+                                                <span id="avaliable_in_premium_website" class="kba_premium_option" style="position: static !important; display: inline-block !important; white-space: nowrap !important; margin-right: 0 !important; margin-left: 0 !important; margin-top: 0.2rem !important; width: auto !important; vertical-align: baseline;">
+                                                    <span style="color:red;"> *</span>
+                                                    <span style="color:black; font-weight:normal"> (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
+                                                </span>
+                                            </div>
+                                            <div style="position: relative; width: 100%;">
+                                                <select id="select_website" name="select_website" class="twofa-form-select twofa-form-select-disabled" <?php print_r($create_account_first); ?> disabled>
+                                <option value="base" selected><?= $block->escapeHtml($baseWebsiteName) ?></option>
+                            </select>
+                                                <div class="twofa-icon-overlay">
+                                                    <i class="fas fa-globe"></i>
+                                </div>
+                                            </div>
+                                    </div>
+                                    <br>
 
-        customerCheckbox.addEventListener("change", function () {
-            customerContainer.style.display = this.checked ? "block" : "none";
+                                        <!-- Customer Group Dropdown -->
+                                        <div style="position: relative;">
+                                            <div class="twofa-label-container">
+                                                <label for="twofa_customer_groups" class="twofa-form-label">
+                                                Select a Customer Group
+                                            </label>
+                                                <span class="kba_premium_option" style="position: static !important; display: inline-block !important; white-space: nowrap !important; margin-right: 0 !important; margin-left: 0 !important; margin-top: 0.2rem !important; width: auto !important; vertical-align: baseline;">
+                                                    <span style="color:red;"> *</span>
+                                                    <span style="color:black; font-weight:normal"> (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
+                                                </span>
+                                            </div>
+                                            <div style="position: relative; width: 100%;">
+                                                <select id="twofa_customer_groups" class="twofa-form-select twofa-form-select-disabled" disabled>
+                                                    <option value="all">All Groups</option>
+                                                    <?php foreach($customer_groups as $group): ?>
+                                                        <option value="<?php echo $this->escapeHtmlAttr($group['value']); ?>">
+                                                            <?php echo $this->escapeHtml($group['label']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                        </select>
+                                                <div class="twofa-icon-overlay">
+                                                    <i class="fas fa-users"></i>
+                                    </div>
+                                    </div>
+                                </div>
+                                <br>
+
+                                        <!-- Available Authentication Methods -->
+                                        <h4 style="font-size:1.5rem; font-weight: 500; margin-bottom: 1rem; padding-top: 1rem;">Available Authentication Methods</h4>
+                                        <form id="saveSingInSettings_customer" method="post" action="">
+                                            <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
+                                            <input type="hidden" name="option" value="saveSingInSettings_customer" >
+                                            <div style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 1rem;">
+                                                <?php foreach ($authMethods as $key => $method): ?>
+                                                    <div class="flex items-center justify-between border rounded-lg twofa-method-card" 
+                                                         onclick="toggleCheckbox(this)">
+                                                        <div class="twofa-method-content">
+                                                            <i class="<?php echo $this->escapeHtmlAttr($method['icon']); ?> twofa-method-icon"></i>
+                                                                <span class="twofa-method-text"><?php echo $this->escapeHtml($method['label']); ?></span>
+                                                        </div>
+                                                        <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer;">
+                                                            <input type="checkbox" class="otp-toggle peer sr-only" 
+                                                                   name="<?= $key == 'OOS' ? 'otp' : ($key == 'OOE' ? 'email' : ($key == 'OOSE' ? 'oose' : 'googleauthenticator')) ?>"
+                                                                   data-method="<?php echo $this->escapeHtmlAttr($key); ?>"
+                                                                   data-method-label="<?php echo $this->escapeHtmlAttr($method['label']); ?>"
+                                                                   data-method-icon="<?php echo $this->escapeHtmlAttr($method['icon']); ?>"
+                                                                <?= $method['selected'] ? 'checked' : ''; ?>
+                                                                <?php print_r($create_account_first); ?> 
+                                                                value="true">
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                </div>
+
+                                <!-- 2FA During Registration Section -->
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6" style="margin-top: 2rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; padding-top: 1rem;">
+                                        <h4 class="text-lg font-medium" style="font-size:1.5rem; margin: 0;">2FA During Registration</h4>
+                                        <span class="kba_premium_option" style="position: static !important; display: inline-block !important; white-space: nowrap !important; margin-right: 0 !important; margin-left: 0 !important; margin-top: 0.2rem !important; width: auto !important; vertical-align: baseline;">
+                                            <span style="color:red;"> *</span>
+                                            <span style="color:black; font-weight:normal"> (Available in the <a href="<?php print_r($pricing); ?>" class="premium btn-link">premium</a> version)</span>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between mb-4" style="font-size:1.4rem; padding-top:1rem;">
+                                        <span class="text-gray-700">Enable Two Factor Authentication During Customer Registration.</span>
+                                        <label class="switch">
+                                            <input type="checkbox" name="customer_registration_inline" disabled
+                                                   class="hidden">
+                                            <div class="slider round"></div>
+                                        </label>
+                                    </div>
+
+                                    <!-- Note -->
+                                    <div id="noteSection" class="bg-white border border-yellow-600 text-yellow-300 rounded-lg p-4 my-8"
+                                         style="color:black">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-info-circle text-lg mr-2"></i>
+                                            <p class="text-lg font-medium">Note</p>
+                                        </div>
+                                        <p class="mt-2" style="font-size: 1.3rem;">
+                                            Enabling this option will require customers to complete Two-Factor Authentication (2FA) during the registration process, ensuring they verify their identity before creating an account.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <br><br>
+                                <button <?php print_r($create_account_first); ?> type="button" name="link_setup"
+                                    onclick="document.getElementById('saveSingInSettings_customer').submit();"
+                                    class="px-6 py-4 text-white font-semibold rounded-lg transition-colors duration-200" style="background-color:#eb5202;">
+                                    <?= !empty($existingRules) ? 'Update Rule' : 'Add Rule' ?>
+                                </button>
+                            </form>
+                </div>
+                
+                <!-- Existing Rules -->
+                <h3 class="text-xl font-semibold text-gray-800 mb-4 twofa-rules-heading" style="margin-top: 2rem;">Existing Rules</h3>
+                <div id="existingRules_customer" class="space-y-6"></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <script>
+        function goBackToCards() {
+            // Remove type parameter to show card selection
+            const url = new URL(window.location.href);
+            url.searchParams.delete('type');
+            window.location.href = url.toString();
+            return false; 
+        }
+        
+        // Function to display existing admin rules
+        function renderExistingAdminRule() {
+            const existingRulesContainer = document.getElementById('existingRules');
+            if (!existingRulesContainer) return;
+
+            const rules = <?= json_encode($existingRules) ?: '[]'; ?>;
+            
+            if (rules && rules.length > 0) {
+                existingRulesContainer.innerHTML = rules.map((rule, index) => {
+                    const methodsDisplay = rule.methods.map(method => `
+                        <span class="inline-flex items-center px-4 py-2 text-sm" style="font-size:1.4rem; border-radius: 4px; color:black; background-color:#eeeeee;">
+                            <i class="${method.icon} mr-2"></i>
+                            <span style="color: black;">${method.label}</span>
+                        </span>
+                    `).join('');
+
+                    return `
+                        <div class="existing-rule">
+                            <div style="flex: 1;">
+                                <h4 class="font-medium text-black" style="font-size:1.5rem; margin-bottom: 0.75rem;">${rule.role || 'All Roles'}</h4>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${methodsDisplay}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <form method="post" action="" style="display: inline;">
+                                    <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
+                                    <input type="hidden" name="option" value="delete_existing_rule" />
+                                    <input type="hidden" name="delete_role" value="${rule.role || 'All Roles'}" />
+                                    <button type="submit" class="delete-btn" <?php print_r($create_account_first); ?>
+                                            style="border:none; background-color:transparent; padding: 0.5rem; font-size: 1.4rem; cursor: pointer; color: black;" title="Delete Rule">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                existingRulesContainer.innerHTML = '';
+            }
+        }
+        
+        // Function to toggle a checkbox when its parent div is clicked
+        function toggleAdminCheckbox(parentElement, checkboxId) {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = !checkbox.checked;
+                // Don't update existing rules display in real-time - only show after save
+            }
+        }
+
+        function copyBackdoorUrlAdmin() {
+            const copyText = document.querySelector('.backdoor');
+            if (navigator.clipboard && copyText) {
+                navigator.clipboard.writeText(copyText.value || copyText.innerText)
+                    .then(() => {
+                        const copyMessage = document.getElementById('copyMessage_admin');
+                        if (copyMessage) {
+                            copyMessage.classList.remove('hidden');
+                            setTimeout(() => {
+                                copyMessage.classList.add('hidden');
+                            }, 2000);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy: ', err);
+                    });
+            } else {
+                console.error('Clipboard API not supported or no text found to copy.');
+            }
+        }
+
+        // Function to render existing customer rules
+        function renderExistingCustomerRule() {
+            const existingRulesContainer = document.getElementById('existingRules_customer');
+            if (!existingRulesContainer) return;
+
+            const rules = <?= json_encode($existingRules) ?: '[]'; ?>;
+            
+            if (rules && rules.length > 0) {
+                const baseWebsiteName = '<?= $block->escapeJs($baseWebsiteName) ?>';
+                existingRulesContainer.innerHTML = rules.map((rule, index) => {
+                    const methodsDisplay = rule.methods.map(method => `
+                        <span class="inline-flex items-center px-4 py-2 text-sm" style="font-size:1.4rem; border-radius: 4px; color:black; background-color:#eeeeee;">
+                            <i class="${method.icon} mr-2"></i>
+                            <span style="color: black;">${method.label}</span>
+                        </span>
+                    `).join('');
+
+                    const siteDisplay = (rule.site === 'base' || rule.site === 'All Sites') ? baseWebsiteName : (rule.site || 'All Sites');
+                    const ruleLabel = `${siteDisplay} - ${rule.group || 'All Groups'}`;
+
+                    return `
+                        <div class="existing-rule">
+                            <div style="flex: 1;">
+                                <h4 class="font-medium text-black" style="font-size:1.5rem; margin-bottom: 0.75rem;">${ruleLabel}</h4>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${methodsDisplay}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <form method="post" action="" style="display: inline;">
+                                    <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>" />
+                                    <input type="hidden" name="option" value="delete_existing_rule_customer" />
+                                    <input type="hidden" name="delete_site" value="${rule.site === 'base' ? 'base' : (rule.site || 'All Sites')}" />
+                                    <input type="hidden" name="delete_group" value="${rule.group || 'All Groups'}" />
+                                    <button type="submit" class="delete-btn" <?php print_r($create_account_first); ?>
+                                            style="border:none; background-color:transparent; padding: 0.5rem; font-size: 1.4rem; cursor: pointer; color: black;" title="Delete Rule">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                existingRulesContainer.innerHTML = '';
+            }
+        }
+
+        function toggleCheckbox(parentElement) {
+            const checkbox = parentElement.querySelector(".otp-toggle");
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = !checkbox.checked;
+                const slider = parentElement.querySelector(".toggle-slider");
+                if (slider) {
+                    slider.classList.toggle("peer-checked");
+                }
+                // Trigger change event to update parent styling
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        }
+        
+        // Update toggle sliders on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll(".otp-toggle").forEach((checkbox) => {
+                const slider = checkbox.nextElementSibling;
+                if (slider && slider.classList.contains('toggle-slider')) {
+                    if (checkbox.checked) {
+                        slider.classList.add("peer-checked");
+                    }
+                }
+                checkbox.addEventListener("change", (event) => {
+                    const slider = event.target.nextElementSibling;
+                    if (slider && slider.classList.contains('toggle-slider')) {
+                        if (event.target.checked) {
+                            slider.classList.add("peer-checked");
+                        } else {
+                            slider.classList.remove("peer-checked");
+                        }
+                    }
+                });
+                
+                // Set initial state for checked checkboxes
+                if (checkbox.checked) {
+                    const slider = checkbox.nextElementSibling;
+                    if (slider && slider.classList.contains('toggle-slider')) {
+                        slider.classList.add("peer-checked");
+                    }
+                }
+            });
+
         });
-
-        // Initial check
-        if (customerCheckbox.checked) {
-            customerContainer.style.display = "block";
-        } else {
-            customerContainer.style.display = "none";
+        
+        function toggleCustomerOption() {
+            var option = document.getElementById("customer_option").value;
+            var daysOption = document.getElementById("customer_daysOption");
+            var customOption = document.getElementById("customer_customOption");
+            if (option === "days") {
+                daysOption.style.display = "block";
+                customOption.style.display = "none";
+            } else if (option === "custom") {
+                daysOption.style.display = "none";
+                customOption.style.display = "block";
+            } else {
+                daysOption.style.display = "none";
+                customOption.style.display = "none";
+            }
         }
-
-        var adminCheckbox = document.getElementById("admin_skip_inline");
-        var adminContainer = document.querySelector(".admin_container");
-
-        adminCheckbox.addEventListener("change", function () {
-            adminContainer.style.display = this.checked ? "block" : "none";
-        });
-
-        // Initial check
-        if (adminCheckbox.checked) {
-            adminContainer.style.display = "block";
-        } else {
-            adminContainer.style.display = "none";
+        function toggleAdminOption() {
+            var option = document.getElementById("admin_option").value;
+            var daysOption = document.getElementById("admin_daysOption");
+            var customOption = document.getElementById("admin_customOption");
+            if (option === "days") {
+                daysOption.style.display = "block";
+                customOption.style.display = "none";
+            } else if (option === "custom") {
+                daysOption.style.display = "none";
+                customOption.style.display = "block";
+            } else {
+                daysOption.style.display = "none";
+                customOption.style.display = "none";
+            }
         }
-    };
-</script>
+        window.onload = function () {
+            var customerCheckbox = document.getElementById("customer_skip_inline");
+            if (customerCheckbox) {
+                var customerContainer = document.querySelector(".customer_container");
+                customerCheckbox.addEventListener("change", function () {
+                    customerContainer.style.display = this.checked ? "block" : "none";
+                });
+                if (customerCheckbox.checked) {
+                    customerContainer.style.display = "block";
+                } else {
+                    customerContainer.style.display = "none";
+                }
+            }
+            var adminCheckbox = document.getElementById("admin_skip_inline");
+            if (adminCheckbox) {
+                var adminContainer = document.querySelector(".admin_container");
+                adminCheckbox.addEventListener("change", function () {
+                    adminContainer.style.display = this.checked ? "block" : "none";
+                });
+                if (adminCheckbox.checked) {
+                    adminContainer.style.display = "block";
+                } else {
+                    adminContainer.style.display = "none";
+                }
+            }
+            
+            // Render existing admin rule on page load
+            renderExistingAdminRule();
+            renderExistingCustomerRule();
+        };
+    </script>
+<?php endif; ?>

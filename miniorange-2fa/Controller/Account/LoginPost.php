@@ -149,8 +149,14 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
         if ($this->checkCustomerLicense($username,$customer,$resultRedirect)) {
 
             if ($this->shouldInvokeInlineTwoFA()) {
+                $userDetails = $this->twofaUtility->getMoTfaUserDetails('miniorange_tfa_users', $username);
+                if (is_array(value: $userDetails) && sizeof($userDetails) > 0 && $this->twofaUtility->isTwoFADisabled($userDetails)) {
+                    $this->twofaUtility->log_debug("Execute LoginPost: 2FA is disabled for this user, proceeding with default login");
+                    return $this->defaultLoginFlow($username, $customer, $resultRedirect, $user_limit=false);
+                }
 
-                $this->initiateTwoFactorChallenge($username, $resultRedirect);
+                $this->initiateTwoFactorChallenge($username, $customer, $resultRedirect);
+                return $resultRedirect;
             } else{
 
                 return $this->defaultLoginFlow($username, $customer, $resultRedirect,$user_limit=false);
@@ -170,18 +176,96 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
     private function shouldInvokeInlineTwoFA()
     {
         $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA");
+        
+        // First check basic config
         $active_method = $this->twofaUtility->getStoreConfig(TwoFAConstants::ACTIVE_METHOD);
         $active_method_status= ($active_method=='[]' || $active_method==NULL) ? false : true ;
-       return $this->twofaUtility->getStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION) && $active_method_status ;
+        $invokeInline = $this->twofaUtility->getStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION);
+        
+        if (!$invokeInline || !$active_method_status) {
+            $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Basic config check failed");
+            return false;
+        }
+        
+        // Check if there are site-specific rules
+        $customerRulesJson = $this->twofaUtility->getStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE);
+        $customerRules = $customerRulesJson ? json_decode($customerRulesJson, true) : [];
+        
+        // If no rules exist, use legacy behavior (check basic config only)
+        if (empty($customerRules)) {
+            $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: No rules found, using legacy behavior");
+            return true;
+        }
+        
+        // Get current website info from the current store (more reliable for multi-site)
+        $currentStore = $this->storeManager->getStore();
+        $currentWebsiteId = $currentStore->getWebsiteId();
+        $currentWebsite = $this->storeManager->getWebsite($currentWebsiteId);
+        $currentWebsiteName = $currentWebsite ? $currentWebsite->getName() : '';
+        $currentWebsiteCode = $currentWebsite ? $currentWebsite->getCode() : '';
+        
+        $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Current website ID: " . $currentWebsiteId . ", Name: " . $currentWebsiteName . ", Code: " . $currentWebsiteCode);
+        
+        // Check if any rule applies to current website
+        foreach ($customerRules as $rule) {
+            if (!isset($rule['site'])) {
+                continue;
+            }
+            
+            $ruleSite = $rule['site'];
+            
+            // Rule applies if:
+            // 1. Site is 'base' (main website) - check if current website is base
+            // 2. Site is 'All Sites'
+            // 3. Site matches current website name
+            // 4. Site matches current website code
+            // 5. Site is empty (legacy rule)
+            $siteMatches = false;
+            
+            // Get base website info for comparison
+            $baseWebsite = $this->storeManager->getWebsite(1);
+            $baseWebsiteName = $baseWebsite ? $baseWebsite->getName() : '';
+            $baseWebsiteCode = $baseWebsite ? $baseWebsite->getCode() : '';
+            
+            if ($ruleSite === 'base' || $ruleSite === '' || empty($ruleSite)) {
+                // Check if current website is the base website (usually ID 1)
+                if ($baseWebsite && ($baseWebsite->getId() == $currentWebsiteId || $baseWebsite->getCode() == $currentWebsiteCode)) {
+                    $siteMatches = true;
+                    $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Rule matches base website");
+                }
+            } elseif ($ruleSite === 'All Sites') {
+                $siteMatches = true;
+                $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Rule matches All Sites");
+            } elseif ($ruleSite === $currentWebsiteName || $ruleSite === $currentWebsiteCode) {
+                // Direct match with current website name or code
+                $siteMatches = true;
+                $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Rule matches current website: " . $ruleSite);
+            } elseif ($baseWebsite && ($ruleSite === $baseWebsiteName || $ruleSite === $baseWebsiteCode)) {
+                // Rule site matches base website name/code, check if current website is base
+                if ($baseWebsite->getId() == $currentWebsiteId || $baseWebsite->getCode() == $currentWebsiteCode) {
+                    $siteMatches = true;
+                    $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Rule matches base website by name/code: " . $ruleSite);
+                }
+            }
+            
+            if ($siteMatches) {
+                $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: Found matching rule, 2FA should be invoked");
+                return true;
+            }
+        }
+        
+        $this->twofaUtility->log_debug("Inside shouldInvokeInlineTwoFA: No matching rule found for current site, 2FA should not be invoked");
+        return false;
     }
 
     /**
      * Initiate two factor challenge
      *
      * @param string $username
+     * @param \Magento\Customer\Api\Data\CustomerInterface $customer
      * @param \Magento\Framework\Controller\Result\Redirect $resultRedirect
      */
-    private function initiateTwoFactorChallenge($username, $resultRedirect)
+    private function initiateTwoFactorChallenge($username, $customer, $resultRedirect)
     {
 
         $this->twofaUtility->log_debug("Execute LoginPost: Inside initiateTwoFactorChallenge : Inline Invoked and found active method");
@@ -189,12 +273,16 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
         $this->twofaUtility->setSessionValue('mousername', $username);
         $this->setCookie('mousername', $username);
 
-        $userDetails = $this->twofaUtility->getMoTfaUserDetails('miniorange_tfa_users', $username);
-        if ($userDetails) {
-            $this->handleRegisteredUser($username, $userDetails[0]['active_method'], $resultRedirect);
-        } else {
-            $this->handleInlineUserRegistration($username, $resultRedirect);
-        }
+         $userDetails = $this->twofaUtility->getMoTfaUserDetails('miniorange_tfa_users', $username);
+         if ($userDetails) {
+             if ($this->twofaUtility->isTwoFADisabled($userDetails)) {
+                 $this->twofaUtility->log_debug("Execute LoginPost: 2FA is disabled for this user (duplicate check in initiateTwoFactorChallenge)");
+                 return $this->defaultLoginFlow($username, $customer, $resultRedirect, $user_limit=false);
+             }
+             $this->handleRegisteredUser($username, $userDetails[0]['active_method'], $resultRedirect);
+         } else {
+             $this->handleInlineUserRegistration($username, $resultRedirect);
+         }
     }
 
     /**
@@ -229,18 +317,76 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
             $response = json_decode($miniOrangeUser->challenge($username, $this->twofaUtility, $authType, true));
             if ($response->status === 'SUCCESS') {
                 $this->twofaUtility->updateColumnInTable('miniorange_tfa_users', 'transactionId' , $response->txId, 'username', $username);
-                $resultRedirect->setPath('motwofa/mocustomer/index', [
-                    'mooption' => 'invokeTFA',
+                
+                // Get user details to extract phone and countrycode if needed
+                $row = $this->twofaUtility->getMoTfaUserDetails('miniorange_tfa_users', $username);
+                $phone = '';
+                $countrycode = '';
+                if (is_array($row) && sizeof($row) > 0) {
+                    $phone = isset($row[0]['phone']) ? $row[0]['phone'] : '';
+                    $countrycode = isset($row[0]['countrycode']) ? $row[0]['countrycode'] : '';
+                }
+                
+                // Map authType to the appropriate step
+                $step = '';
+                $params = [
+                    'mooption' => 'invokeInline',
                     'message' => $response->message,
                     'r_status' => $response->status,
-                    'active_method' => $authType
-                ]);
+                    'active_method' => $authType,
+                    'showdiv' => 'showdiv' 
+                ];
+                
+                if ($authType === 'OOS') {
+                    $step = 'OOSMethodValidation';
+                    $params['step'] = $step;
+                    $params['savestep'] = 'OOS';
+                    $params['deleteSet'] = 'deleteSet';
+                    if ($phone) {
+                        $params['phone'] = $phone;
+                    }
+                    if ($countrycode) {
+                        $params['countrycode'] = $countrycode;
+                    }
+                } elseif ($authType === 'OOE') {
+                    $step = 'OOEMethodValidation';
+                    $params['step'] = $step;
+                    $params['savestep'] = 'OOE';
+                    $params['deleteSet'] = 'deleteSet';
+                } elseif ($authType === 'OOSE') {
+                    $step = 'OOSEMethodValidation';
+                    $params['step'] = $step;
+                    $params['savestep'] = 'OOSE';
+                    $params['deleteSet'] = 'deleteSet';
+                    $params['useremail'] = $username;
+                    if ($phone) {
+                        $params['phone'] = $phone;
+                    }
+                    if ($countrycode) {
+                        $params['countrycode'] = $countrycode;
+                    }
+                } else {
+                    // Fallback to old UI for unknown methods
+                    $params = [
+                        'mooption' => 'invokeTFA',
+                        'message' => $response->message,
+                        'r_status' => $response->status,
+                        'active_method' => $authType
+                    ];
+                }
+                
+                $resultRedirect->setPath('motwofa/mocustomer/index', $params);
             } else {
                 $this->handleTwoFactorChallengeFailure($response->message, $resultRedirect);
             }
         } else {
+            // Google Authenticator
             $resultRedirect->setPath('motwofa/mocustomer/index', [
-                'mooption' => 'invokeTFA',
+                'mooption' => 'invokeInline',
+                'step' => 'GAMethodValidation',
+                'savestep' => 'GoogleAuthenticator',
+                'addPasscode' => 'true',
+                'deleteSet' => 'deleteSet',
                 'active_method' => $authType
             ]);
         }
@@ -423,16 +569,15 @@ class LoginPost extends \Magento\Customer\Controller\Account\LoginPost
         $this->twofaUtility->log_debug("Users limit is exceeded");
         }
         
-        // Continue the flow
+         // Continue the flow
 
-        $this->customerSession->setCustomerDataAsLoggedIn($customer);
-        $this->customerSession->regenerateId();
+         $this->customerSession->setCustomerDataAsLoggedIn($customer);
+         $this->customerSession->regenerateId();
 
-
-        $resultRedirect->setPath('customer/account/login');
-        return $resultRedirect;
+         // Redirect to account page, not login page
+         $resultRedirect->setPath('customer/account');
+         return $resultRedirect;
 
     }
-
 
 }

@@ -1,120 +1,156 @@
-<!--Pricing Tab-->
 <?php
+$products = [
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/sso.png'),
+        'alt' => 'Single Sign On',
+        //'badge' => 'POPULAR',
+        'title' => 'Single Sign On',
+        'description' => 'Login into Magento/Adobe Commerce using any Third Party Identity Provider User credentials',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-miniorange-oauth-sso.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/idp_upgrade.png'),
+        'alt' => '',
+        // 'badge' => 'NEW',
+        'title' => 'SAML IDP',
+        'description' => 'Login into any third party applications using Magento credentials.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-idpsaml.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/scim_upgrade.png'),
+        'alt' => 'Scim User Provisioning',
+        //'badge' => 'POPULAR',
+        'title' => 'User Provisioning & Sync',
+        'description' => 'Automate real-time two-way user sync, including creation, updates, and deletions, between your applications and Magento.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-scim.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/otp_upgrade.png'),
+        'alt' => 'Mobile Login',
+        //'badge' => 'POPULAR',
+        'title' => 'Mobile Login',
+        'description' => 'Log in to Magento store using mobile number/email — no password required.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-otp-verification.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/ldap_upgrade.png'),
+        'alt' => 'LDAP Login',
+        //'badge' => 'POPULAR',
+        'title' => 'LDAP / Active Directory Login Integration',
+        'description' => 'Log in to Magento using LDAP/AD credentials from Active Directory, OpenLDAP, OpenDS, FreeIPA, Synology, and more.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-miniorange-ldap.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/google_upgrade.png'),
+        'alt' => 'Google One Tap Login',
+        //'badge' => 'POPULAR',
+        'title' => 'Google One Tap Login',
+        'description' => 'One Click sign in or register on your Magento store using Google Account credentials.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-google-one-tap-login.html'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/security_upgrade.png'),
+        'alt' => 'Security Suite',
+        //'badge' => 'POPULAR',
+        'title' => 'Security Suite',
+        'description' => 'Secure your Magento store with robust security tools.',
+        'link' => 'https://plugins.miniorange.com/magento-2-security-suite-extension'
+    ],
+    [
+        'image' => $this->getViewFileUrl('MiniOrange_TwoFA::images/social_upgrade.png'),
+        'alt' => 'Social Login & Share',
+        //'badge' => 'POPULAR',
+        'title' => 'Social Login & Share',
+        'description' => 'Log in to Magento using social login credentials, including Facebook, Instagram, Google, Twitter, LinkedIn, and more.',
+        'link' => 'https://commercemarketplace.adobe.com/miniorange-inc-miniorange-social-login.html'
+    ],
+];
+$get_plan_level = $this->getLicensePlan();
+if($get_plan_level == 4){
+    $plan_name = 'TwoFA Trial Extension';
+}elseif($get_plan_level == 1){
+    $plan_name = 'TwoFA Premium Extension';
+}elseif($get_plan_level == 3){
+    $plan_name = 'TwoFA Frontend Extension';
+}else{ 
+    $plan_name = 'TwoFA Free Extension';
+}
+?>
+<!-- Breadcrumb -->
 
-$idpsettings = $block->getExtensionPageUrl('idpsettings');
-$hostname = $block->getMiniOrangeUrl();
-$email = $block->getCustomerEmail();
-$version = $block->getCurrentVersion();
+<!-- Main Content -->
+<div class="main-content">
+    <div class="container">
+        <div class="main-panel_upgrade background_gray">
+            <div class="panel-content">
+                <!-- Ultra Simple Upgrade Banner -->
+                <div class="upgrade-banner">
+                    <div class="plan-info">
+                        <div class="plan-status">Current Plan</div>
+                        <div class="panel-title_report"> <?php echo $this->escapeHtml($plan_name); ?> <span 
+                            class="plan-version">Version <?php echo $this->escapeHtml($this->getCurrentVersion()); ?></span>
+                        </div>
 
 
-echo '
-     <div class="page" id="pricing" style=" border-radius: 20px; padding: 30px; margin : 20px;width:120%">
+                    </div>
+                    <span>
+                            <a href="https://plugins.miniorange.com/magento-two-factor-authentication-2fa#pricing"
+                               target="_blank" class="btn btn-primary" style="float: right;font-size:1.4rem">
+                                <i class="fas fa-arrow-circle-up"></i>
+                                Click Here to Upgrade
+                            </a>
 
-      <section class="pricing py-5">
+                        </span>
 
-      <div class="container">
-
-      <div class="row"
-      style="display:flex;"
-      style="width:30%"
-      >
-
-        <!-- Free Tier -->
-        <div class="columns">
-
-              <ul class="price">
-
-                <li class="header" style="background-color: #ea680b">2FA Free ' . $block->escapeHtmlAttr($version) . '</li>
-                <li class="grey">$0</li>
-                <li>&#10004 Authentication Methods (Limited Methods)</li>
-                <li>&#10004 OTP Over SMS (10 SMS)</li>
-                <li>&#10004 OTP Over Email (10 Email)</li>
-                <li>&#10004 OTP Over SMS and Email (10 SMS & EMAIL)</li>
-                <li>&#10004 Google Authenticator (10 Auto create user)</li>
-                <li>&#10004 Allow specific 2fa methods to configure in inline registration</li>
-                <li>&#10004 User management (reset users 2fa method)</li>
-                <li>&#10004 Backdoor URL as Backup method for Backend Users</li>
-
-                </ul>
-
+                </div>
             </div>
-            <!-- Plus Tier -->
-            <div class="columns">
-
-            <ul class="price">
-
-                       <li class="header" style="text-align:center">2FA-Backend </li>
-                <li class="grey">$99</li>
-         <li>&#10148; 15+ Authentication Methods</li>
-           <li>&#10148; Allow specific 2fa methods to configure in inline registration</li>
-           <li>&#10148; Email SMTP Custom Gateway</li>
-           <li>&#10148; SMS Custom Gateway (Twilio/ Get Method/ Post Method)</li>
-           <li>&#10148; Customize Email Templates</li>
-           <li>&#10148; Customize SMS Templates</li>
-           <li>&#10148; User management (reset users 2fa method)</li>
-           <li>&#10148; Backend Role base 2fa</li>
-           <li>&#10148; Backdoor URL as Backup method for Backend Users</li>
-           <li>&#10148; Reconfigure/ change 2fa method for admin</li>
-          
-           <li style="text-align:center!important"><a href="https://mail.google.com/mail/u/0/?fs=1&amp;tf=cm&amp;source=mailto&amp;su=Query+to+purchase+Magento+TwoFA+Premium+Plan+&amp;to=magentosupport@xecurify.com&amp;body=I+want+to+enquire+about+the+purchase+of+the+Magento+TwoFA+Premium+Plan.+" target="_blank" rel="nofollow" class="button btn-round" style="font: size 14px;px;padding:7px 12px">Upgrade</a>
-         </li>
-          </ul>
-
         </div>
 
 
-        <!-- Pro Tier -->
-        <div class="columns">
+        <!-- Related Products -->
+        <div class="main-panel_upgrade">
+            <div class="panel-header">
+                <div class="panel-title-container">
+                    <h2 class="panel-title">Related Products</h2>
+                    <p class="panel-subtitle">Enhance your Magento store with our complementary extensions</p>
+                </div>
+                <div class="panel-actions">
+                    <div class="btn btn-outline" onclick="openAllProducts()">
+                        <i class="fas fa-th-large"></i>
+                        View All Products
+                    </div>
+                    <!-- <a href="#" class="btn btn-outline">
+                        <i class="fas fa-th-large"></i>
+                        View All Products
+                    </a> -->
+                </div>
+            </div>
 
-        <ul class="price" >
+            <div class="panel-content">
+                <div class="products-grid">
+                    <?php foreach ($products as $product): ?>
+                        <div class="product-card">
+                            <div class="product-image">
+                                <img src="<?php echo $this->escapeUrl($product['image']); ?>" loading="lazy" alt="<?php echo $this->escapeHtmlAttr($product['alt']); ?>">
+                            </div>
+                            <div class="product-details">
+                                <h3 class="product-title"><?php echo $this->escapeHtml($product['title']); ?></h3>
+                                <p class="product-description"><?php echo $this->escapeHtml($product['description']); ?></p>
+                                <div class="product-actions">
+                                    <a href="<?php echo $this->escapeUrl($product['link']); ?>" target="_blank" class="btn btn-primary position">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
 
-               <li class="header" style="text-align:center">2FA-Frontend/Backend  </li>
-                  <li class="grey">$299</li>
-         <li>&#10148; <strong>All 2FA-Backend Features</strong></li>
-           <li>&#10148; Set Different 2fa method for multiple sites.</li>
-           <li>&#10148; Customer group/Role Based 2FA </li>
-           <li>&#10148; Enforce 2fa at registration for customers</li>
-           <li>&#10148; KBA as Backup method for Frontend Users</li>
-           <li>&#10148; Customize Ui of login UI popup</li>
-           <li>&#10148; Skip 2FA & Remember My Device</li>
-           <li>&#10148; IP specific 2FA (Whitelisting IP Address)</li>
-           <li>&#10148; Supports REST API to send and validate OTPs</li>
-           
-         <li style="text-align:center!important;margin-top:8px"><a href="https://mail.google.com/mail/u/0/?fs=1&amp;tf=cm&amp;source=mailto&amp;su=Query+to+purchase+Magento+TwoFA+Premium+Plan+&amp;to=magentosupport@xecurify.com&amp;body=I+want+to+enquire+about+the+purchase+of+the+Magento+TwoFA+Premium+Plan.+" target="_blank" rel="nofollow" class="button btn-round" style="font: size 14px;px;padding:7px 12px">Upgrade</a>
-         </li>
-
-           </ul>
-
-         </div>
-        
-             </div>
-
-             <div style="margin:2% 0 2% 2%;">
-
-      <form style="display:none;" id="mocf_loginform" action="' . $block->escapeHtmlAttr($hostname) . '/moas/login"
-
-          target="_blank" method="post">
-
-          <input type="email" name="username" value="' . $block->escapeHtmlAttr($email) . '" >
-
-          <input type="text" name="redirectUrl" value="' . $block->escapeHtmlAttr($hostname) . '/moas/initializepayment" >
-
-          <input type="text" name="requestOrigin" id="requestOrigin"  >
-
-      </form>
-
-  </div>
-
+                </div>
+            </div>
+        </div>
     </div>
-
-
-  </section>
-
-    </div>
-
-<div >
-<p> Contact us at <a href="mailto:magentosupport@xecurify.com">magentosupport@xecurify.com</a> for more info.</p><br>
-
 </div>
 
-    ';
+<script>
+function openAllProducts() {
+    window.open("https://plugins.miniorange.com/magento", "_blank");
+}
+</script>

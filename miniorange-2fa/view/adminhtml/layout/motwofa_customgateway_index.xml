@@ -3,6 +3,7 @@
 	  xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
         <css src="MiniOrange_TwoFA::css/adminSettings.css"/>
+        <css src="MiniOrange_TwoFA::css/all.min.css"/>
     </head>
     <body>
         <!-- 

@@ -183,6 +183,12 @@ class Auth extends \Magento\Backend\Model\Auth
                  if($module_tfa && $backdoor_login==NULL) {
                     $this->twofautility->log_debug("Auth.php : execute: module enabled");
                     if( is_array( $row ) && sizeof( $row ) > 0 ){
+                        if ($this->twofautility->isTwoFADisabled($row)) {
+                            $this->twofautility->log_debug("Auth.php : execute: 2FA is disabled for this user, bypassing all 2FA logic");
+                            $this->DefaultAdminLoginFlow();
+                            return;
+                        }
+                        
                         // MFA only for those who have configured
                         $this->twofautility->log_debug("Auth.php : execute: admin has already set TwoFA settings");
                         $authType = $row[0]['active_method'];
@@ -366,4 +372,5 @@ class Auth extends \Magento\Backend\Model\Auth
             ['user' => $this->getCredentialStorage()]
         );
               }
+
 }

@@ -3,6 +3,7 @@
 namespace MiniOrange\TwoFA\Helper;
 
 use MiniOrange\TwoFA\Helper\TwoFAConstants;
+use MiniOrange\TwoFA\Helper\TwoFAUtility;
 
 /**
  * This class denotes all the cURL related functions.
@@ -13,8 +14,8 @@ class Curl
     public static function create_customer($email, $company, $password, $phone = '', $first_name = '', $last_name = '')
     {
         $url ='https://login.xecurify.com/moas/rest/customer/add';
-        $customerKey = TwoFAConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = TwoFAConstants::DEFAULT_API_KEY;
+        $customerKey = "";
+        $apiKey = "";
         $fields = [
             'companyName' => $company,
             'areaOfInterest' => 'Magento 2 Factor Authentication Plugin',
@@ -32,8 +33,8 @@ class Curl
     public static function get_customer_key($email, $password)
     {
         $url = TwoFAConstants::HOSTNAME . "/moas/rest/customer/key";
-        $customerKey = TwoFAConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = TwoFAConstants::DEFAULT_API_KEY;
+        $customerKey = "";
+        $apiKey = "";
         $fields = [
             'email' => $email,
             'password' => $password
@@ -48,8 +49,8 @@ class Curl
     public static function check_customer($email)
     {
         $url = TwoFAConstants::HOSTNAME . "/moas/rest/customer/check-if-exists";
-        $customerKey = TwoFAConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = TwoFAConstants::DEFAULT_API_KEY;
+        $customerKey = "";
+        $apiKey = "";
         $fields = [
             'email' => $email,
         ];
@@ -91,8 +92,8 @@ class Curl
     ) {
         $url = TwoFAConstants::HOSTNAME . "/moas/rest/customer/contact-us";
         $query = '[' . TwoFAConstants::AREA_OF_INTEREST . ']: ' . $query;
-        $customerKey = TwoFAConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = TwoFAConstants::DEFAULT_API_KEY;
+        $customerKey = "";
+        $apiKey = "";
 
         $fields = [
             'email' => $q_email,
@@ -241,12 +242,12 @@ public static function submit_to_magento_team(
     $autoCreateLimit
     ) {
     $url = TwoFAConstants::PLUGIN_PORTAL_HOSTNAME . "/api/tracking";
-    $customerKey = TwoFAConstants::DEFAULT_CUSTOMER_KEY;
-    $apiKey = TwoFAConstants::DEFAULT_API_KEY;
+    $customerKey = "";
+    $apiKey = "";
 
     // $timeStamp = time();
     $pluginName = TwoFAConstants::MODULE_TITLE;
-    $pluginVersion = TwoFAConstants::PLUGIN_VERSION;
+    $pluginVersion = TwoFAUtility::getModuleVersion();
     $isFreeInstalled = 'Yes';
     $isTrialInstalled = '';
     $trialInstalledDate = '';

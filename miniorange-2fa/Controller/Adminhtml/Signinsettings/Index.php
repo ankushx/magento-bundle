@@ -33,13 +33,69 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     public function execute()
     {
         try {
-            $params = $this->getRequest()->getParams(); //get params
-            // check if form options are being saved
-            if ($this->isFormOptionBeingSaved($params)) {
+            $params = $this->getRequest()->getParams(); 
+            $postValue = $this->getRequest()->getPostValue(); 
+            $isPost = $this->getRequest()->isPost(); 
+            
+            // check if form options are being saved 
+            if ($isPost && $this->isFormOptionBeingSaved($params)) {
+                $isCustomerRegistered = $this->twofautility->isCustomerRegistered();
+                $isEnabled = $this->twofautility->micr();
+                
+                if (!$isCustomerRegistered || !$isEnabled) {
+                    $resultRedirect = $this->resultRedirectFactory->create();
+                    $resultRedirect->setPath('motwofa/tfasettingsconfigurationtable/index');
+                    return $resultRedirect;
+                }
+                
+                // Validate that at least one authentication method is selected
+                if (isset($params['option']) && $params['option'] == 'saveSingInSettings_admin') {
+                    $hasMethod = isset($params["admin_oose"]) && $params["admin_oose"] == "true" ||
+                                 isset($params["admin_ooe"]) && $params["admin_ooe"] == "true" ||
+                                 isset($params["admin_oos"]) && $params["admin_oos"] == "true" ||
+                                 isset($params["admin_googleauthenticator"]) && $params["admin_googleauthenticator"] == "true";
+                    
+                    if (!$hasMethod) {
+                        $this->messageManager->addErrorMessage(__('Please select at least one authentication method.'));
+                        $resultRedirect = $this->resultRedirectFactory->create();
+                        $resultRedirect->setPath('motwofa/signinsettings/index', ['type' => 'admin']);
+                        return $resultRedirect;
+                    }
+                }
+                
+                if (isset($params['option']) && $params['option'] == 'saveSingInSettings_customer') {
+                    $hasMethod = isset($params["oose"]) && $params["oose"] == "true" ||
+                                 isset($params["email"]) && $params["email"] == "true" ||
+                                 isset($params["otp"]) && $params["otp"] == "true" ||
+                                 isset($params["googleauthenticator"]) && $params["googleauthenticator"] == "true";
+                    
+                    if (!$hasMethod) {
+                        $this->messageManager->addErrorMessage(__('Please select at least one authentication method.'));
+                        $resultRedirect = $this->resultRedirectFactory->create();
+                        $resultRedirect->setPath('motwofa/signinsettings/index', ['type' => 'customer']);
+                        return $resultRedirect;
+                    }
+                }
+                
                 $this->processValuesAndSaveData($params);
                 $this->twofautility->flushCache();
                 $this->messageManager->addSuccessMessage(TwoFAMessages::SETTINGS_SAVED);
                 $this->twofautility->reinitConfig();
+                
+                // Redirect to configuration table page after saving
+                $redirectUrl = $this->twofautility->getAdminUrl('motwofa/tfasettingsconfigurationtable/index');
+                return $this->resultRedirectFactory->create()->setUrl($redirectUrl);
+            }
+            
+            if (!isset($params['type']) && !isset($params['new_rule'])) {
+                $customerRules = $this->getExistingCustomerRules();
+                $adminRules = $this->getExistingAdminRules();
+                
+                if (!empty($customerRules) || !empty($adminRules)) {
+                    // Redirect to configuration table page to show existing rules
+                    $redirectUrl = $this->twofautility->getAdminUrl('motwofa/tfasettingsconfigurationtable/index');
+                    return $this->resultRedirectFactory->create()->setUrl($redirectUrl);
+                }
             }
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
@@ -49,6 +105,34 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->prepend(__(TwoFAConstants::MODULE_TITLE));
         return $resultPage;
+    }
+    
+    /**
+     * Get existing customer rules
+     * @return array
+     */
+    private function getExistingCustomerRules()
+    {
+        $customerRuleJson = $this->twofautility->getStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE);
+        if (empty($customerRuleJson)) {
+            return [];
+        }
+        $rules = json_decode($customerRuleJson, true);
+        return is_array($rules) ? $rules : [];
+    }
+    
+    /**
+     * Get existing admin rules
+     * @return array
+     */
+    private function getExistingAdminRules()
+    {
+        $adminRuleJson = $this->twofautility->getStoreConfig(TwoFAConstants::CURRENT_ADMIN_RULE);
+        if (empty($adminRuleJson)) {
+            return [];
+        }
+        $rules = json_decode($adminRuleJson, true);
+        return is_array($rules) ? $rules : [];
     }
 
 
@@ -96,33 +180,58 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
 
         $admin_activeMethodArray = array();
-  $number_of_activeMethod_admin=NULL;
+        $number_of_activeMethod_admin=NULL;
+        $methods = [];
 
-      if( isset($params["admin_oose"]) && $params["admin_oose"] == "true" ) {
-        $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
-        array_push($admin_activeMethodArray, "OOSE");
-      }
-      if( isset($params["admin_ooe"]) && $params["admin_ooe"] == "true" ) {
-        $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
-          array_push($admin_activeMethodArray, "OOE");
-      }
-      if( isset($params["admin_oos"]) && $params["admin_oos"] == "true" ) {
-        $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
+        if( isset($params["admin_oose"]) && $params["admin_oose"] == "true" ) {
+            $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
+            array_push($admin_activeMethodArray, "OOSE");
+            $methods[] = ['method' => 'OOSE', 'label' => 'OTP over SMS and Email', 'icon' => 'fas fa-bell'];
+        }
+        if( isset($params["admin_ooe"]) && $params["admin_ooe"] == "true" ) {
+            $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
+            array_push($admin_activeMethodArray, "OOE");
+            $methods[] = ['method' => 'OOE', 'label' => 'OTP over Email', 'icon' => 'fas fa-envelope'];
+        }
+        if( isset($params["admin_oos"]) && $params["admin_oos"] == "true" ) {
+            $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
             array_push($admin_activeMethodArray, "OOS");
-      }
-      if( isset($params["admin_googleauthenticator"]) && $params["admin_googleauthenticator"] == "true" ) {
-        $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
-        array_push($admin_activeMethodArray, "GoogleAuthenticator");
-      }
+            $methods[] = ['method' => 'OOS', 'label' => 'OTP over SMS', 'icon' => 'fas fa-sms'];
+        }
+        if( isset($params["admin_googleauthenticator"]) && $params["admin_googleauthenticator"] == "true" ) {
+            $number_of_activeMethod_admin =$number_of_activeMethod_admin+1;
+            array_push($admin_activeMethodArray, "GoogleAuthenticator");
+            $methods[] = ['method' => 'GoogleAuthenticator', 'label' => 'Google Authenticator', 'icon' => 'fas fa-mobile-alt'];
+        }
 
-      $admin_activeMethod = json_encode( $admin_activeMethodArray );
-      $backendMethod = $admin_activeMethod;
-      $frontendMethod  = '';
-      $registrationMethod = '';
+        $admin_activeMethod = json_encode( $admin_activeMethodArray );
+        $backendMethod = $admin_activeMethod;
+        $frontendMethod  = '';
+        $registrationMethod = '';
 
-      $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_ADMIN_METHOD,$number_of_activeMethod_admin);
+        $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_ADMIN_METHOD,$number_of_activeMethod_admin);
         $this->twofautility->setStoreConfig(TwoFAConstants::ADMIN_ACTIVE_METHOD_INLINE,$admin_activeMethod);
 
+        if ($number_of_activeMethod_admin > 0) {
+            $this->twofautility->setStoreConfig(TwoFAConstants::MODULE_TFA, 1);
+        }
+
+        $rule = [
+            'role' => 'Administrators',
+            'methods' => $methods
+        ];
+        $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_ADMIN_RULE, json_encode([$rule]));
+
+    }
+
+    if(isset($params['option']) && $params['option']=='delete_existing_rule'){
+        $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_ADMIN_RULE, json_encode([]));
+        $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_ADMIN_METHOD, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::ADMIN_ACTIVE_METHOD_INLINE, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::MODULE_TFA, 0);
+        $backendMethod = '';
+        $frontendMethod = '';
+        $registrationMethod = '';
     }
 
   if(isset($params['option']) && $params['option']=='enable_customer_tfa'){
@@ -142,26 +251,32 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
 }
-    if(  isset($params['option']) && $params['option']=='saveSingInSettings_customer'){
+     if(  isset($params['option']) && $params['option']=='saveSingInSettings_customer'){
 
 
       $activeMethodArray = array();
       $number_of_activeMethod_customer=NULL;
+      $methods = [];
+      
       if( isset($params["oose"]) && $params["oose"] == "true" ) {
         array_push($activeMethodArray, "OOSE");
         $number_of_activeMethod_customer=$number_of_activeMethod_customer+1;
+        $methods[] = ['method' => 'OOSE', 'label' => 'OTP over SMS and Email', 'icon' => 'fas fa-bell'];
       }
       if( isset($params["email"]) && $params["email"] == "true" ) {
           array_push($activeMethodArray, "OOE");
           $number_of_activeMethod_customer=$number_of_activeMethod_customer+1;
+          $methods[] = ['method' => 'OOE', 'label' => 'OTP over Email', 'icon' => 'fas fa-envelope'];
       }
       if( isset($params["otp"]) && $params["otp"] == "true" ) {
             array_push($activeMethodArray, "OOS");
             $number_of_activeMethod_customer=$number_of_activeMethod_customer+1;
+            $methods[] = ['method' => 'OOS', 'label' => 'OTP over SMS', 'icon' => 'fas fa-sms'];
       }
       if( isset($params["googleauthenticator"]) && $params["googleauthenticator"] == "true" ) {
         array_push($activeMethodArray, "GoogleAuthenticator");
         $number_of_activeMethod_customer=$number_of_activeMethod_customer+1;
+        $methods[] = ['method' => 'GoogleAuthenticator', 'label' => 'Google Authenticator', 'icon' => 'fas fa-mobile-alt'];
       }
      
       $activeMethod = json_encode( $activeMethodArray );
@@ -172,7 +287,30 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
       $this->twofautility->setStoreConfig(TwoFAConstants::ACTIVE_METHOD,$activeMethod);
       $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_CUSTOMER_METHOD,$number_of_activeMethod_customer);
 
+      if ($number_of_activeMethod_customer > 0) {
+          $this->twofautility->setStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION, 1);
+      } else {
+          $this->twofautility->setStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION, 0);
+      }
 
+      $rule = [
+          'site' => 'base',
+          'group' => 'All Groups',
+          'methods' => $methods
+      ];
+      $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE, json_encode([$rule]));
+
+    }
+
+    if(isset($params['option']) && $params['option']=='delete_existing_rule_customer'){
+        // Clear the rule
+        $this->twofautility->setStoreConfig(TwoFAConstants::CURRENT_CUSTOMER_RULE, json_encode([]));
+        $this->twofautility->setStoreConfig(TwoFAConstants::ACTIVE_METHOD, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::NUMBER_OF_CUSTOMER_METHOD, NULL);
+        $this->twofautility->setStoreConfig(TwoFAConstants::INVOKE_INLINE_REGISTERATION, 0);
+        $backendMethod = '';
+        $frontendMethod = '';
+        $registrationMethod = '';
     }
 
         // added registration twofa

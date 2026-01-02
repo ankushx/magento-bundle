@@ -20,6 +20,7 @@
         <column xsi:type="varchar" name="backup_method" nullable="false" length="255" comment="Backup Method"/>
         <column xsi:type="varchar" name="secret" nullable="false" length="255" comment="Authenticator Secret"/>
         <column xsi:type="varchar" name="transactionId" nullable="false" length="255" comment="Transaction ID"/>
+        <column xsi:type="varchar" name="website_id" nullable="false" length="255" comment="Website ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="id"/>
         </constraint>

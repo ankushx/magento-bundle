@@ -1,70 +1,151 @@
+<!--
+    This template shows a registration page to the user.
+    This page is only shown if the registration status is
+    not set in the system.
+-->
+
 <?php
 $currentAdminUser = $block->getCurrentAdminUser()->getData();
-$userEmail = $currentAdminUser["email"];
-$firstName = $currentAdminUser["firstname"];
-$lastName = $currentAdminUser["lastname"];
-$site = $block->getBaseUrl();
+$userEmail = $currentAdminUser['email'] ?? '';
+$firstName = $currentAdminUser['firstname'] ?? '';
+$lastName = $currentAdminUser['lastname'] ?? '';
+$formKey = $block->getBlockHtml('formkey');
 
-$formKey = $block->getFormKey();
+?>
 
-echo '
-    <link rel="stylesheet" type="text/css" href="path_to_your_css/style.css">
+<div class="p-8" style="width:70%;">
+    <div class="bg-white rounded-lg p-6">
 
-    <div class="row box box-flex">
-        <div class="col-sm-12 page_margin">
-            <div class="page" id="register">
-                <form name="f" method="post" action="" id="register-form">
-                    <input type="hidden" name="form_key" value="'. $block->escapeHtmlAttr($formKey) .'" />
+        <!-- Register Page -->
+        <div id="registerPage" class="page-section" style="display: none;">
+            <h1 class="text-3xl font-bold mb-6 text-black my-4"
+                style="font-size: 2.5rem; text-align: center; margin: 0 auto; display: block;">Create New Account</h1>
+
+            <div class="bg-white rounded-lg px-32 my-12" style="width: 100%;">
+                <form id="register-form" method="post" action="">
+                    <?php print_r($formKey); ?>
+
                     <input type="hidden" name="option" value="registerNewUser">
-                    <div class="mo_idp_table_layout">
-                        <h2 id="register_login">Register with miniOrange</h2>
-                        <hr>
-                       
-                        <div class="mo_note">
-                            <div class="btn-link" id="why_register" href="">Why do I need to register?</a></div>
-                            <div style="display:none; text-align:left; margin:8px " class="show_info">
-                                With registration, we will provide you with 10 free email transactions to test OTP over email using our miniOrange gateway. 
-                                Registration also makes it easier for us to get in touch with you in case you need any help. We can assist you with step-by-step instructions.</b>.
+
+                    <div class="bg-white rounded-xl flex px-mo-32 flex-col gap-mo-4">
+                        <div class="w-full mo-input-wrapper group my-6">
+                            <label class="mo-input-label">Email</label>
+                            <input class="w-full mo-input" type="email" name="email" style="height: 5rem;"
+                                value="<?= $escaper->escapeHtmlAttr($userEmail) ?>" required>
+                        </div>
+
+                        <div class="w-full mo-input-wrapper group my-4">
+                            <label class="mo-input-label">Website or Company Name</label>
+                            <input class="w-full mo-input" type="text" name="companyName" style="height: 5rem;" required
+                                   placeholder="Enter your Company Name" value="">
+                        </div>
+
+                        <div class="flex items-center gap-mo-4 my-4">
+                            <div class="w-full mo-input-wrapper group">
+                                <label class="mo-input-label">First Name</label>
+                                <input class="w-full mo-input" type="text" name="firstName" placeholder="<?= $escaper->escapeHtmlAttr(__('First Name')) ?>"
+                                    style="height: 5rem;" value="<?= $escaper->escapeHtmlAttr($firstName) ?>"> ?>">
+                            </div>
+
+                            <div class="w-full mo-input-wrapper group">
+                                <label class="mo-input-label">Last Name</label>
+                                <input class="w-full mo-input" type="text" name="lastName" placeholder="<?= $escaper->escapeHtmlAttr(__('Last Name')) ?>"
+                                    style="height: 5rem;" value="<?= $escaper->escapeHtmlAttr($lastName) ?>">
                             </div>
                         </div>
-                    </div>
-                    <div class="register-form-container">
-                        <div class="register-form-inner-container">
-                            <div class="row" id="email">
-                                <div class="col-sm-2 row1 labels">
-                                    <label>Email: </label>
-                                </div>
-                                <div class="col-sm-10 row1" >
-                                    <input style="width: 58%;" class="mosp_table_textbox register_textboxes register-input" type="email" name="email" required placeholder="person@example.com" value="' . $block->escapeHtmlAttr($userEmail) . '">
-                                </div>
+
+                        <div class="flex items-center gap-mo-4 my-4">
+                            <div class="w-full mo-input-wrapper group">
+                                <label class="mo-input-label">Password (Min. Length 6)</label>
+                                <input class="w-full mo-input" type="password" name="password" style="height: 5rem;"
+                                       placeholder="Choose your password (Min. length 6)" required>
                             </div>
-                            <div class="row" id="password">
-                                <div class="col-sm-2 row1 labels">
-                                    <label class="labels">Password: </label>
-                                </div>
-                                <div class="col-sm-8 row1">
-                                    <input class="mosp_table_textbox register_textboxes register-input" required type="password" name="password" placeholder="Password (Min. length 6)">
-                                </div>
-                            </div>
-                            <div class="row" id="confirmPassword">
-                                <div class="col-sm-2 row1 labels">
-                                    <label class="labels">Confirm Password: </label>
-                                </div>
-                                <div class="col-sm-8 row1">
-                                    <input id="myInput" required class="mosp_table_textbox register_textboxes register-input" type="password" name="confirmPassword" placeholder="Confirm your password">
-                                </div>
+
+                            <div class="w-full mo-input-wrapper group">
+                                <label class="mo-input-label">Confirm Password</label>
+                                <input class="w-full mo-input" type="password" name="confirmPassword"
+                                       style="height: 5rem;" placeholder="Choose your password (Min. length 6)"
+                                       required>
                             </div>
                         </div>
-                        &nbsp;
-                        <div class="side-by-side">
-                            <input type="submit" class="btn-round" name="submit" id="registerLoginButton" value="Register" style="width:150px;">
-                            <strong id="registered" class="register-login btn-link-round">Already Registered? Click here to Login</strong>
+
+                        <div class="flex gap-mo-2 my-4">
+                            <input type="checkbox" class="form_options" style="margin-top: 0.1rem;"
+                                   id="mo_agree_plugin_policy" name="mo_customer_validation_agree_plugin_policy"
+                                   value="1" required>
+                            <span class="my-2">
+                                    I have read and agree to the
+                                    <u><i><a target="_blank"
+                                             href="https://plugins.miniorange.com/end-user-license-agreement"
+                                             style="cursor:pointer;">End User Agreement</a></i></u>
+                                    and
+                                    <u><i><a target="_blank"
+                                             href="https://plugins.miniorange.com/wp-content/uploads/2023/08/Plugins-Privacy-Policy.pdf"
+                                             style="cursor:pointer;">Plugin Privacy Policy</a></i></u>.
+                                </span>
                         </div>
-                        <br>
-                        <a id="forget_pass" href="https://login.xecurify.com/moas/idp/resetpassword" target="_blank" style="display:none; color:black; cursor:pointer; margin-left:3%;">Click here if you forgot your password</a>
+
+                        <div class="flex flex-col gap-4 my-6">
+                            <input type="submit" class="mo-button inverted"
+                                   style="background-color:#eb5202;height: 5rem;" name="submit" value="Register">
+                            <a href="javascript:void(0);" class="mo-button secondary" style="height: 5rem;"
+                               onclick="switchToLoginPage()">Already Have an Account? Sign In</a>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
-    </div>';
-?>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page-section">
+
+            <h1 class="text-3xl font-bold mb-6 text-black my-4"
+                style="font-size: 2.5rem; text-align: center; margin: 0 auto; display: block;">Login with
+                miniOrange</h1>
+
+            <div class="bg-white rounded-lg px-32 my-12" style="width: 100%;">
+                <form id="advance_saveSettings" method="post" action="">
+                    <?php print_r($formKey); ?>
+                    <input type="hidden" name="option" value="loginExistingUser">
+
+                    <div class="bg-white rounded-xl flex px-mo-32 flex-col gap-mo-4">
+                        <div class="w-full mo-input-wrapper group my-6">
+                            <label class="mo-input-label">Email</label>
+                            <input class="w-full mo-input" type="email" name="email" style="height: 5rem;"
+                                value="<?= $escaper->escapeHtmlAttr($userEmail) ?>" required>
+                        </div>
+
+                        <div class="w-full mo-input-wrapper group my-6">
+                            <label class="mo-input-label">Password</label>
+                            <input class="w-full mo-input" type="password" style="height: 5rem;" name="password"
+                                   required placeholder="Enter your Password">
+                        </div>
+
+                        <div class="my-2" style="text-align: right;">
+                            <a href="https://login.xecurify.com/moas/idp/resetpassword" target="_blank"
+                               class="text-right font-bold hover:underline float-right forgot-password-link">Forgot Password</a>
+                        </div>
+
+                        <input type="submit" class="mo-button inverted my-6"
+                               style="background-color:#eb5202;height: 5rem;" name="submit" value="Login">
+                        <a href="https://www.miniorange.com/businessfreetrial" target="blank" class="mo-button secondary" style="height: 5rem;"
+                           >Register</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function switchToLoginPage() {
+        document.getElementById('registerPage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'block';
+    }
+
+    function switchToRegisterPage() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('registerPage').style.display = 'block';
+    }
+</script>
